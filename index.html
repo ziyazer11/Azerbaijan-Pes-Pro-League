@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>azerbaijanpesproleague.tk | Official Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@600;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="bg-gradient"></div>
+
+    <header>
+        <div class="logo">AZERBAIJANPESPROLEAGUE.TK</div>
+        <nav class="nav-links">
+            <a href="#standings" class="active">STANDINGS</a>
+            <a href="#schedule">SCHEDULE</a>
+        </nav>
+        <button id="login-trigger-btn" class="btn-admin">ADMIN LOGIN</button>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>PREMIER LEAGUE</h1>
+            <p>The ultimate Pro Evolution Soccer competition in Azerbaijan. Track stats, view schedules, and climb the
+                mountain of glory.</p>
+        </section>
+
+        <section id="standings">
+            <h2 class="section-title">LEAGUE STANDINGS</h2>
+            <div class="glass-card standings-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="rank">#</th>
+                            <th>TEAM</th>
+                            <th>P</th>
+                            <th>W</th>
+                            <th>D</th>
+                            <th>L</th>
+                            <th>GD</th>
+                            <th class="pts">PTS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standings-body">
+                        <!-- JS Render -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="schedule">
+            <h2 class="section-title">MATCH SCHEDULE</h2>
+            <div id="schedule-list" class="schedule-list">
+                <!-- JS Render -->
+            </div>
+        </section>
+
+        <!-- Admin Dashboard (Only visible when logged in) -->
+        <section id="admin-section" style="display: none;">
+            <h2 class="section-title">ADMIN CONTROL PANEL</h2>
+
+            <div class="glass-card">
+                <h3>MANAGE TEAMS</h3>
+                <div class="form-group" style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <input type="text" id="new-team-name" placeholder="Enter Team Name">
+                    <button class="btn-primary" onclick="addTeam()" style="width: 150px;">ADD TEAM</button>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3>TOURNAMENT ZONES</h3>
+                <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem;">Set how many teams go through
+                    to each stage (from top to bottom).</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Next Round (Top X)</label>
+                        <input type="number" id="zone-next-count" value="2" onchange="updateZones()">
+                    </div>
+                    <div class="form-group">
+                        <label>Playoffs (Next X)</label>
+                        <input type="number" id="zone-playoff-count" value="2" onchange="updateZones()">
+                    </div>
+                    <div class="form-group">
+                        <label>Out (Bottom X)</label>
+                        <input type="number" id="zone-out-count" value="2" onchange="updateZones()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3>SCHEDULE NEW MATCH</h3>
+                <form onsubmit="scheduleMatch(event)"
+                    style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; margin-top: 1rem; align-items: end;">
+                    <div class="form-group">
+                        <label>Team 1</label>
+                        <select id="match-t1" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Team 2</label>
+                        <select id="match-t2" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date & Time</label>
+                        <input type="datetime-local" id="match-datetime" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="height: 45px;">CREATE</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('admin-login-modal')">&times;</span>
+            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--primary);">SECURE ACCESS</h2>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" placeholder="ziyazer11@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-pass" required>
+                </div>
+                <button type="submit" class="btn-primary">AUTHENTICATE</button>
+            </form>
+        </div>
+    </div>
+
+    <footer
+        style="text-align: center; padding: 4rem; color: var(--text-dim); border-top: 1px solid var(--glass-border);">
+        <p>&copy; 2026 Azerbaijan PES Pro League. Hosted on Vercel.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
