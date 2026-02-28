@@ -76,6 +76,7 @@ async function loadInitialData() {
 
         renderStandings();
         renderSchedule();
+        renderMatchHistory();
         populateSelects();
         startCountdownTimer();
 
@@ -179,6 +180,7 @@ function updateUIForAuth() {
         document.body.classList.remove('is-admin');
     }
     renderStandings();
+    renderSchedule();
     renderMatchHistory();
 }
 
@@ -484,8 +486,6 @@ function renderMatchHistory() {
     if (!historyContainer) return;
     historyContainer.innerHTML = '';
 
-    if (!isAdmin) return;
-
     const playedMatches = matches.filter(m => m.played);
     const sortedMatches = playedMatches.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)); // Newest first
 
@@ -511,10 +511,12 @@ function renderMatchHistory() {
                 <span class="vs">${m.score1} - ${m.score2}</span>
                 <span>${m.team2}</span>
             </div>
+            ${isAdmin ? `
             <div class="admin-controls">
                 <button class="btn-sm btn-success" onclick="recordResult(${m.id})">EDIT SCORE</button>
                 <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">DEL</button>
             </div>
+            ` : ''}
         `;
         historyContainer.appendChild(card);
     });
