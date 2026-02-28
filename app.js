@@ -518,7 +518,7 @@ function renderStandings() {
     const totalTeams = teams.length;
     const zoneOut = zones.out;
 
-    teams.forEach((t, index) => {
+    teams.forEach((team, index) => {
         let zoneClass = '';
         let label = '';
         const rank = index + 1;
@@ -539,25 +539,25 @@ function renderStandings() {
         row.innerHTML = `
             <td class="rank">${rank}</td>
             <td class="team-name">
-                ${t.name} ${label}
+                ${team.name} ${label}
                 ${isAdmin ? `
                     <div class="admin-controls">
-                        <button class="btn-sm btn-danger" onclick="removeTeam('${t.name}')">DEL</button>
-                        <button class="btn-sm" onclick="renameTeam('${t.name}')">EDIT</button>
+                        <button class="btn-sm btn-danger" onclick="removeTeam('${team.name}')">DEL</button>
+                        <button class="btn-sm" onclick="renameTeam('${team.name}')">EDIT</button>
                     </div>
                 ` : ''}
             </td>
-            <td>${t.played}</td>
-            <td>${t.wins}</td>
-            <td>${t.draws}</td>
-            <td>${t.losses}</td>
-            <td>${t.gd > 0 ? '+' : ''}${t.gd}</td>
+            <td>${team.played}</td>
+            <td>${team.wins}</td>
+            <td>${team.draws}</td>
+            <td>${team.losses}</td>
+            <td>${team.gd > 0 ? '+' : ''}${team.gd}</td>
             <td>
                 <div class="form-container">
-                    ${getTeamForm(t.name).map(res => `<span class="form-dot ${res.class}">${res.label}</span>`).join('')}
+                    ${getTeamForm(team.name).map(res => `<span class="form-dot ${res.class}">${res.label}</span>`).join('')}
                 </div>
             </td>
-            <td class="pts">${t.pts}</td>
+            <td class="pts">${team.pts}</td>
         `;
         standingsBody.appendChild(row);
     });
@@ -755,8 +755,8 @@ function populateSelects() {
     s1.innerHTML = '<option value="">Select Team 1</option>';
     s2.innerHTML = '<option value="">Select Team 2</option>';
 
-    teams.forEach(t => {
-        const opt = `<option value="${t.name}">${t.name}</option>`;
+    teams.forEach(team => {
+        const opt = `<option value="${team.name}">${team.name}</option>`;
         s1.innerHTML += opt;
         s2.innerHTML += opt;
     });
