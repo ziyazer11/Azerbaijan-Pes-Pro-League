@@ -179,6 +179,7 @@ function updateUIForAuth() {
         document.body.classList.remove('is-admin');
     }
     renderStandings();
+    renderMatchHistory();
 }
 
 // --- Team Management ---
