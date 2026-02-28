@@ -30,6 +30,7 @@ const ADMIN_PASS = "Hasanzade2011!";
 // DOM Elements
 const standingsBody = document.getElementById('standings-body');
 const scheduleList = document.getElementById('schedule-list');
+const resultsList = document.getElementById('results-list');
 const adminLoginModal = document.getElementById('admin-login-modal');
 const adminDashboard = document.getElementById('admin-dashboard');
 
@@ -539,17 +540,17 @@ function renderStandings() {
 }
 
 function renderSchedule() {
-    if (!scheduleList) return;
+    if (!scheduleList || !resultsList) return;
     scheduleList.innerHTML = '';
+    resultsList.innerHTML = '';
 
-    // Only show unplayed matches in the public schedule
+    // 1. Render Unplayed Matches (Match Schedule)
     const unplayedMatches = matches.filter(m => !m.played);
-    const sortedMatches = unplayedMatches.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+    const sortedUnplayed = unplayedMatches.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
 
-    sortedMatches.forEach(m => {
+    sortedUnplayed.forEach(m => {
         const card = document.createElement('div');
         card.className = 'glass-card match-card';
-
         const dateStr = new Date(m.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
         card.innerHTML = `
@@ -572,6 +573,45 @@ function renderSchedule() {
         `;
         scheduleList.appendChild(card);
     });
+
+    // 2. Render Played Matches (Latest Results)
+    const playedMatches = matches.filter(m => m.played);
+    const sortedPlayed = playedMatches.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)); // Newest first
+
+    if (sortedPlayed.length === 0) {
+        resultsList.innerHTML = '<p style="color:var(--text-dim); text-align:center; padding:1rem;">No results recorded yet.</p>';
+    } else {
+        sortedPlayed.slice(0, 5).forEach(m => { // Show last 5 results on home page
+            const card = document.createElement('div');
+            card.className = 'glass-card match-card';
+            card.style.borderLeft = '4px solid var(--az-green)';
+            const dateStr = new Date(m.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+            card.innerHTML = `
+                <div class="match-info">
+                    <strong>${dateStr}</strong><br>
+                    <span style="color:var(--primary)">COMPLETED</span><br>
+                    ${m.highlightsUrl ?
+                    `<a href="${m.highlightsUrl}" target="_blank" class="btn-watch"><i data-lucide="play-circle"></i> WATCH HIGHLIGHTS</a>` :
+                    `<span style="color:var(--text-dim); font-size: 0.75rem;">No highlights yet</span>`
+                }
+                </div>
+                <div class="match-teams">
+                    <span>${m.team1}</span>
+                    <span class="vs">${m.score1} - ${m.score2}</span>
+                    <span>${m.team2}</span>
+                </div>
+                ${isAdmin ? `
+                    <div class="admin-controls">
+                        <button class="btn-sm btn-success" onclick="recordResult(${m.id})">EDIT HIGHLIGHTS</button>
+                        <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">DEL</button>
+                    </div>
+                ` : ''}
+            `;
+            resultsList.appendChild(card);
+        });
+    }
+    lucide.createIcons();
 }
 
 function openPredictionModal(matchId) {
