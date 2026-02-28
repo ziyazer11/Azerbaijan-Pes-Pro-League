@@ -20,6 +20,12 @@
     </div>
     <div class="bg-gradient"></div>
 
+    <!-- Live Match Banner -->
+    <div id="live-match-banner" style="display:none;" class="live-banner">
+        <span class="live-dot"></span>
+        <span id="live-banner-text">🔴 LIVE NOW: Loading...</span>
+    </div>
+
     <header>
         <div class="logo">Azerbaijan Pes Pro League</div>
 
@@ -91,9 +97,25 @@
             </div>
         </section>
 
+        <!-- Weekly Awards -->
+        <section id="weekly-awards">
+            <h2 class="section-title" data-i18n="weekly_awards">⚽ WEEKLY AWARDS</h2>
+            <div id="awards-container" class="awards-grid">
+                <!-- JS Render -->
+            </div>
+        </section>
+
         <section id="results">
             <h2 class="section-title" style="color: var(--secondary);" data-i18n="latest_results">LATEST RESULTS</h2>
             <div id="results-list" class="schedule-list" style="margin-bottom: 4rem;">
+                <!-- JS Render -->
+            </div>
+        </section>
+
+        <!-- Trash Talk Board -->
+        <section id="trash-talk-section">
+            <h2 class="section-title" data-i18n="trash_talk">🔥 TRASH TALK BOARD</h2>
+            <div id="trash-talk-list" class="trash-talk-grid">
                 <!-- JS Render -->
             </div>
         </section>
@@ -318,6 +340,27 @@
                 <button type="submit" class="btn-primary" style="margin-top: 1rem;" data-i18n="submit_prediction">SUBMIT
                     PREDICTION</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Trash Talk Modal -->
+    <div id="trash-talk-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('trash-talk-modal')">&times;</span>
+            <h2 style="font-family: var(--font-heading); margin-bottom: 1rem; color: var(--accent);">🔥 DROP YOUR TAKE
+            </h2>
+            <input type="hidden" id="tt-match-id">
+            <p id="tt-match-label" style="color: var(--text-dim); margin-bottom: 1.5rem;"></p>
+            <div class="form-group">
+                <label>Your Name</label>
+                <input type="text" id="tt-author" placeholder="Enter your name">
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label>Your message (max 150 chars)</label>
+                <textarea id="tt-message" maxlength="150" rows="3"
+                    style="width:100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; padding: 0.8rem; color: var(--text-main); font-family: var(--font-main); resize: none;"></textarea>
+            </div>
+            <button class="btn-primary" style="margin-top:1rem;" onclick="postTrashTalk()">SEND IT 🔥</button>
         </div>
     </div>
 
