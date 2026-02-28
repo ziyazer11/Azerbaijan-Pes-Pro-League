@@ -42,6 +42,7 @@
                     </svg>
                 </a>
             </div>
+            <button class="btn-history" onclick="openModal('match-history-modal')">HISTORY</button>
             <button id="login-trigger-btn" class="btn-admin">ADMIN LOGIN</button>
         </div>
     </header>
@@ -82,12 +83,6 @@
             </div>
         </section>
 
-        <section id="history">
-            <h2 class="section-title">MATCH HISTORY</h2>
-            <div id="admin-match-history" class="schedule-list">
-                <!-- JS Render -->
-            </div>
-        </section>
 
         <section id="join-section">
             <h2 class="section-title">JOIN THE COMPETITION</h2>
@@ -177,6 +172,18 @@
                 </div>
                 <button type="submit" class="btn-primary">AUTHENTICATE</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Match History Modal -->
+    <div id="match-history-modal" class="modal">
+        <div class="modal-content history-modal">
+            <span class="close-modal" onclick="closeModal('match-history-modal')">&times;</span>
+            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--secondary);">MATCH HISTORY
+            </h2>
+            <div id="admin-match-history" class="schedule-list history-scroll">
+                <!-- JS Render -->
+            </div>
         </div>
     </div>
 
