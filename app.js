@@ -200,6 +200,14 @@ function handleLogin(e) {
     }
 }
 
+function loginBtnClick() {
+    if (isAdmin) {
+        logout();
+    } else {
+        openModal('admin-login-modal');
+    }
+}
+
 function logout() {
     isAdmin = false;
     updateUIForAuth();
