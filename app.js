@@ -1092,16 +1092,32 @@ function setLanguage(lang) {
 }
 
 function translatePage() {
-    // Translate static HTML tags and placeholders
+    // Translate static HTML tags and placeholders safely
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (i18n[currentLang][key]) {
-            // Check if element is an input with a placeholder
-            if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
-                el.setAttribute('placeholder', i18n[currentLang][key]);
-            } else {
-                // Otherwise, translate text content
-                el.textContent = i18n[currentLang][key];
+        const translation = i18n[currentLang] && i18n[currentLang][key];
+        if (!translation) return;
+
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            // For inputs, update placeholder only
+            if (el.hasAttribute('placeholder')) {
+                el.setAttribute('placeholder', translation);
+            }
+        } else {
+            // Safe text-only update: only replace the first TEXT node.
+            // This preserves child elements (icons, spans) and event listeners.
+            let textNode = null;
+            for (let child of el.childNodes) {
+                if (child.nodeType === Node.TEXT_NODE && child.textContent.trim() !== '') {
+                    textNode = child;
+                    break;
+                }
+            }
+            if (textNode) {
+                textNode.textContent = translation;
+            } else if (el.childNodes.length === 0 || (el.childNodes.length === 1 && el.firstChild.nodeType === Node.TEXT_NODE)) {
+                // Only set textContent when there are no child elements to protect
+                el.textContent = translation;
             }
         }
     });
