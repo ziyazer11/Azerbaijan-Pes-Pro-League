@@ -78,18 +78,26 @@ async function loadInitialData() {
         if (zonesError && zonesError.code !== 'PGRST116') throw zonesError;
         if (zonesData) zones = zonesData;
 
-        // Load Settings (Ticker)
-        const { data: settingsData } = await supabaseClient.from('settings').select('*').eq('id', 'global').single();
-        if (settingsData) {
-            tickerText = settingsData.newsText;
-            updateTickerUI();
+        // Load Settings (Ticker) - Handle potential missing table
+        try {
+            const { data: settingsData, error: sErr } = await supabaseClient.from('settings').select('*').eq('id', 'global').single();
+            if (settingsData && !sErr) {
+                tickerText = settingsData.newsText;
+                updateTickerUI();
+            }
+        } catch (e) {
+            console.warn("Settings table not found or inaccessible.");
         }
 
-        // Load Predictions
-        const { data: predData } = await supabaseClient.from('predictions').select('*');
-        if (predData) {
-            predictionsGroup = predData;
-            calculateLeaderboard();
+        // Load Predictions - Handle potential missing table
+        try {
+            const { data: predData, error: pErr } = await supabaseClient.from('predictions').select('*');
+            if (predData && !pErr) {
+                predictionsGroup = predData;
+                calculateLeaderboard();
+            }
+        } catch (e) {
+            console.warn("Predictions table not found or inaccessible.");
         }
 
         renderStandings();
@@ -99,7 +107,10 @@ async function loadInitialData() {
         startCountdownTimer();
 
     } catch (err) {
-        console.error('Error loading data:', err.message);
+        console.error('Core Error loading data:', err.message);
+        // Still try to render whatever we have
+        renderStandings();
+        renderSchedule();
     }
 }
 
