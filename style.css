@@ -69,22 +69,42 @@ header {
     -webkit-text-fill-color: transparent;
 }
 
-.nav-links {
+.contact-info {
     display: flex;
     gap: 2rem;
+    align-items: center;
 }
 
-.nav-links a {
+.nav-item {
     color: var(--text-dim);
     text-decoration: none;
+    font-size: 0.9rem;
     font-weight: 500;
     transition: color 0.3s ease;
-    cursor: pointer;
 }
 
-.nav-links a:hover,
-.nav-links a.active {
+.nav-item:hover {
     color: var(--primary);
+}
+
+.btn-join {
+    background: linear-gradient(90deg, var(--az-blue), var(--az-green));
+    color: white;
+    text-decoration: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0, 255, 65, 0.2);
+    transition: all 0.3s ease;
+}
+
+.btn-join:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 255, 65, 0.4);
+    filter: brightness(1.1);
 }
 
 .btn-admin {
@@ -410,7 +430,7 @@ input:focus {
         font-size: 2.5rem;
     }
 
-    .nav-links {
+    .contact-info {
         display: none;
     }
 
