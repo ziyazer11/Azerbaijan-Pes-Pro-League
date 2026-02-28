@@ -27,15 +27,16 @@ let leaderboard = []; // Prepared leaderboard data
 const ADMIN_EMAIL = "ziyazer11@gmail.com";
 const ADMIN_PASS = "Hasanzade2011!";
 
-// DOM Elements
-const standingsBody = document.getElementById('standings-body');
-const scheduleList = document.getElementById('schedule-list');
-const resultsList = document.getElementById('results-list');
-const adminLoginModal = document.getElementById('admin-login-modal');
-const adminDashboard = document.getElementById('admin-dashboard');
+// DOM Elements (populated after DOM is ready)
+let standingsBody, scheduleList, resultsList;
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize DOM refs now that DOM is ready
+    standingsBody = document.getElementById('standings-body');
+    scheduleList = document.getElementById('schedule-list');
+    resultsList = document.getElementById('results-list');
+
     translatePage(); // Translate static elements first
     await loadInitialData();
     updateUIForAuth();
