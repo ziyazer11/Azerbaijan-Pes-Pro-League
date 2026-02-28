@@ -128,13 +128,13 @@ async function updateNewsTicker() {
 
     const { error } = await supabaseClient.from('settings').upsert([{ id: 'global', newsText: text }]);
     if (error) {
-        alert("Error updating news: " + error.message);
+        alert(t('alert_error_generic') + error.message);
         return;
     }
     tickerText = text;
     updateTickerUI();
     input.value = '';
-    alert("Official News Updated!");
+    alert(t('alert_news_updated'));
 }
 
 // --- Countdown Logic ---
@@ -194,9 +194,9 @@ function handleLogin(e) {
         isAdmin = true;
         closeModal('admin-login-modal');
         updateUIForAuth();
-        alert("Logged in as Admin");
+        alert(t('alert_login_success'));
     } else {
-        alert("Invalid credentials");
+        alert(t('alert_login_fail'));
     }
 }
 
@@ -244,7 +244,7 @@ async function addTeam() {
     if (!name) return;
 
     if (teams.find(t => t.name === name)) {
-        alert("Team already exists");
+        alert(t('alert_team_exists'));
         return;
     }
 
@@ -261,12 +261,12 @@ async function addTeam() {
     };
 
     if (!supabaseClient) {
-        alert("Database not connected. Please check your Supabase keys in app.js.");
+        alert(t('alert_no_db_full'));
         return;
     }
     const { error } = await supabaseClient.from('teams').insert([newTeam]);
     if (error) {
-        alert("Error adding team: " + error.message);
+        alert(t('alert_error_generic') + error.message);
         return;
     }
 
@@ -276,15 +276,15 @@ async function addTeam() {
 
 async function removeTeam(teamName) {
     if (!isAdmin) return;
-    if (!confirm(`Are you sure you want to remove ${teamName}?`)) return;
+    if (!confirm(t('alert_del_team_confirm') + ` ${teamName}?`)) return;
 
     if (!supabaseClient) {
-        alert("Database not connected.");
+        alert(t('alert_no_db'));
         return;
     }
     const { error } = await supabaseClient.from('teams').delete().eq('name', teamName);
     if (error) {
-        alert("Error removing team: " + error.message);
+        alert(t('alert_error_generic') + error.message);
         return;
     }
 
@@ -293,16 +293,16 @@ async function removeTeam(teamName) {
 
 async function renameTeam(oldName) {
     if (!isAdmin) return;
-    const newName = prompt("Enter new team name:", oldName);
+    const newName = prompt(t('prompt_new_team_name'), oldName);
     if (!newName || newName === oldName) return;
 
     if (!supabaseClient) {
-        alert("Database not connected.");
+        alert(t('alert_no_db'));
         return;
     }
     const { error } = await supabaseClient.from('teams').update({ name: newName }).eq('name', oldName);
     if (error) {
-        alert("Error renaming team: " + error.message);
+        alert(t('alert_error_generic') + error.message);
         return;
     }
 
@@ -318,12 +318,12 @@ async function scheduleMatch(e) {
     const dateTime = document.getElementById('match-datetime').value;
 
     if (t1 === t2) {
-        alert("Cannot play against the same team");
+        alert(t('alert_same_team'));
         return;
     }
 
     if (!supabaseClient) {
-        alert("Database not connected.");
+        alert(t('alert_no_db'));
         return;
     }
     const { error } = await supabaseClient.from('matches').insert([{
@@ -336,7 +336,7 @@ async function scheduleMatch(e) {
     }]);
 
     if (error) {
-        alert("Error scheduling match: " + error.message);
+        alert(t('alert_error_generic') + error.message);
         return;
     }
 
@@ -653,11 +653,11 @@ async function submitPrediction(e) {
     }]);
 
     if (error) {
-        alert("Error submitting prediction: " + error.message);
+        alert(t('alert_pred_error') + error.message);
         return;
     }
 
-    alert("Prediction submitted! Good luck!");
+    alert(t('alert_pred_success'));
     closeModal('prediction-modal');
     e.target.reset();
     await loadInitialData();
@@ -763,13 +763,13 @@ async function updateZones() {
     };
 
     if (!supabaseClient) {
-        alert("Database not connected.");
+        alert(t('alert_no_db'));
         return;
     }
     // Upsert zones (assuming single row with id 1)
     const { error } = await supabaseClient.from('zones').upsert([{ id: 1, ...newZones }]);
     if (error) {
-        alert("Error updating zones: " + error.message);
+        alert(t('alert_error_generic') + error.message);
         return;
     }
 
@@ -824,12 +824,12 @@ async function handleFiles(files) {
     const file = files[0];
 
     if (!file.type.startsWith('video/')) {
-        alert("Please upload a video file.");
+        alert(t('alert_upload_type'));
         return;
     }
 
     if (!supabaseClient) {
-        alert("Database not connected. Cannot upload.");
+        alert(t('alert_no_db'));
         return;
     }
 
@@ -838,7 +838,7 @@ async function handleFiles(files) {
     const urlInput = document.getElementById('result-highlights');
 
     statusDiv.style.display = 'block';
-    statusDiv.innerHTML = 'Uploading: <span id="upload-percent">Please wait...</span>';
+    statusDiv.innerHTML = `${t('uploading')}: <span id="upload-percent">${t('please_wait')}</span>`;
     dropZone.style.pointerEvents = 'none';
 
     try {
@@ -864,11 +864,11 @@ async function handleFiles(files) {
         urlInput.value = publicUrlData.publicUrl;
 
         dropZone.classList.add('success');
-        statusDiv.innerHTML = '<span style="color: var(--primary)">Upload Complete! URL saved to input.</span>';
+        statusDiv.innerHTML = `<span style="color: var(--primary)">${t('upload_complete')}</span>`;
 
     } catch (err) {
         console.error("Upload error:", err);
-        alert("Error uploading file: " + err.message);
+        alert(t('alert_error_generic') + err.message);
         statusDiv.style.display = 'none';
     } finally {
         dropZone.style.pointerEvents = 'auto';
@@ -926,7 +926,52 @@ const i18n = {
         "join_competition": "JOIN THE COMPETITION",
         "email_us": "EMAIL US",
         "call_us": "CALL US",
-        "click_to_join": "CLICK HERE TO JOIN COMPETITION"
+        "click_to_join": "CLICK HERE TO JOIN COMPETITION",
+        // Admin Panel & Placeholders
+        "admin_cp": "ADMIN CONTROL PANEL",
+        "manage_teams": "MANAGE TEAMS",
+        "enter_team_name": "Enter Team Name",
+        "add_team": "ADD TEAM",
+        "tournament_zones": "TOURNAMENT ZONES",
+        "zone_desc": "Set how many teams go through to each stage (from top to bottom).",
+        "next_round": "Next Round (Top X)",
+        "playoffs": "Playoffs (Next X)",
+        "out_zone": "Out (Bottom X)",
+        "news_bar": "NEWS BAR",
+        "news_desc": "Update the scrolling news ticker at the top of the site.",
+        "enter_news": "Enter latest news...",
+        "update": "UPDATE",
+        "schedule_new_match": "SCHEDULE NEW MATCH",
+        "team_1": "Team 1",
+        "team_2": "Team 2",
+        "date_time": "Date & Time",
+        "create": "CREATE",
+        "loading_news": "Loading latest news...",
+        "enter_display_name": "Enter your display name",
+        "enter_highlights_url": "https://youtube.com/...",
+        // Alerts
+        "alert_provide_score": "Please provide both scores.",
+        "alert_provide_highlight": "Please provide either a YouTube/Twitch URL or upload a video file.",
+        "alert_highlight_uploading": "Please wait for the video upload to complete.",
+        "alert_pred_error": "Error submitting prediction: ",
+        "alert_pred_success": "Prediction submitted! Good luck!",
+        "alert_del_confirm": "Are you sure you want to delete this match?",
+        "alert_del_team_confirm": "Are you sure you want to remove",
+        "alert_fill_team_date": "Please fill all fields: Team 1, Team 2, and Date.",
+        "alert_same_team": "Team 1 and Team 2 cannot be the same.",
+        "alert_fill_team_name": "Please enter a team name.",
+        "alert_team_exists": "Team already exists!",
+        "alert_no_db": "Database not connected.",
+        "alert_no_db_full": "Database not connected. Please check your Supabase keys in app.js.",
+        "alert_error_generic": "Error: ",
+        "alert_news_updated": "Official News Updated!",
+        "alert_login_success": "Logged in as Admin",
+        "alert_login_fail": "Invalid credentials",
+        "prompt_new_team_name": "Enter new team name:",
+        "alert_upload_type": "Please upload a video file.",
+        "uploading": "Uploading",
+        "please_wait": "Please wait...",
+        "upload_complete": "Upload Complete! URL saved to input."
     },
     "az": {
         "scheduled": "PLANLAŞDIRILIB",
@@ -973,7 +1018,52 @@ const i18n = {
         "join_competition": "YARIŞMAYA QOŞULUN",
         "email_us": "BİZƏ YAZIN",
         "call_us": "BİZƏ ZƏNG EDİN",
-        "click_to_join": "YARIŞMAYA QOŞULMAQ ÜÇÜN BURAYA TIKLAYIN"
+        "click_to_join": "YARIŞMAYA QOŞULMAQ ÜÇÜN BURAYA TIKLAYIN",
+        // Admin Panel & Placeholders
+        "admin_cp": "ADMİN İDARƏETMƏ PANeli",
+        "manage_teams": "KOMANDALARI İDARƏ ET",
+        "enter_team_name": "Komandanın Adını Daxil Edin",
+        "add_team": "KOMANDA ƏLAVƏ ET",
+        "tournament_zones": "TURNİR ZONALARI",
+        "zone_desc": "Hər mərhələyə neçə komandanın keçəcəyini təyin edin (yuxarıdan aşağıya).",
+        "next_round": "Növbəti Mərhələ (İlk X)",
+        "playoffs": "Pley-off (Növbəti X)",
+        "out_zone": "Məğlub (Son X)",
+        "news_bar": "XƏBƏRLƏR BÖLMƏSİ",
+        "news_desc": "Saytın yuxarısındakı hərəkətli xəbər zolağını yeniləyin.",
+        "enter_news": "Ən son xəbəri daxil edin...",
+        "update": "YENİLƏ",
+        "schedule_new_match": "YENİ OYUN PLANLAŞDIR",
+        "team_1": "Komanda 1",
+        "team_2": "Komanda 2",
+        "date_time": "Tarix və Saat",
+        "create": "YARAT",
+        "loading_news": "Ən son xəbərlər yüklənir...",
+        "enter_display_name": "Görünəcək adınızı daxil edin",
+        "enter_highlights_url": "https://youtube.com/...",
+        // Alerts
+        "alert_provide_score": "Zəhmət olmasa hər iki hesabı qeyd edin.",
+        "alert_provide_highlight": "Zəhmət olmasa ya YouTube/Twitch linki təqdim edin, ya da video faylı yükləyin.",
+        "alert_highlight_uploading": "Zəhmət olmasa video yüklənməsinin tamamlanmasını gözləyin.",
+        "alert_pred_error": "Təxmin göndərilərkən xəta baş verdi: ",
+        "alert_pred_success": "Təxmin göndərildi! Uğurlar!",
+        "alert_del_confirm": "Bu oyunu silmək istədiyinizdən əminsiniz?",
+        "alert_del_team_confirm": "Adlı komandanı silmək istədiyinizdən əminsiniz:",
+        "alert_fill_team_date": "Zəhmət olmasa bütün xanaları doldurun: Komanda 1, Komanda 2 və Tarix.",
+        "alert_same_team": "Komanda 1 və Komanda 2 eyni ola bilməz.",
+        "alert_fill_team_name": "Zəhmət olmasa komandanın adını daxil edin.",
+        "alert_team_exists": "Komanda artıq mövcuddur!",
+        "alert_no_db": "Məlumat bazası qoşulmayıb.",
+        "alert_no_db_full": "Məlumat bazası qoşulmayıb. Zəhmət olmasa app.js-də Supabase açarlarınızı yoxlayın.",
+        "alert_error_generic": "Xəta: ",
+        "alert_news_updated": "Rəsmi Xəbərlər Yeniləndi!",
+        "alert_login_success": "Admin kimi daxil oldunuz",
+        "alert_login_fail": "Email və ya Şifrə yanlışdır",
+        "prompt_new_team_name": "Yeni komandanın adını daxil edin:",
+        "alert_upload_type": "Zəhmət olmasa video fayl yükləyin.",
+        "uploading": "Yüklənir",
+        "please_wait": "Zəhmət olmasa gözləyin...",
+        "upload_complete": "Yüklənmə Tamamlandı! Link yadda saxlanıldı."
     }
 };
 
@@ -988,13 +1078,42 @@ function setLanguage(lang) {
 }
 
 function translatePage() {
-    // Translate static HTML tags
+    // Translate static HTML tags and placeholders
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (i18n[currentLang][key]) {
-            el.textContent = i18n[currentLang][key];
+            // Check if element is an input with a placeholder
+            if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                el.setAttribute('placeholder', i18n[currentLang][key]);
+            } else {
+                // Otherwise, translate text content
+                el.textContent = i18n[currentLang][key];
+            }
         }
     });
+
+    // Translate specific labels that don't have dedicated data-i18n wrappers
+    const predictTeam1Label = document.getElementById('predict-team1-label');
+    const predictTeam2Label = document.getElementById('predict-team2-label');
+    if (predictTeam1Label && predictTeam1Label.textContent.includes('Score')) {
+        const team1Name = predictTeam1Label.textContent.replace(' Score', '').replace(' Hesabı', '');
+        predictTeam1Label.textContent = currentLang === 'en' ? `${team1Name} Score` : `${team1Name} Hesabı`;
+    }
+    if (predictTeam2Label && predictTeam2Label.textContent.includes('Score')) {
+        const team2Name = predictTeam2Label.textContent.replace(' Score', '').replace(' Hesabı', '');
+        predictTeam2Label.textContent = currentLang === 'en' ? `${team2Name} Score` : `${team2Name} Hesabı`;
+    }
+
+    // Translate dynamic prediction result texts
+    const resultTeam1Label = document.getElementById('result-team1-label');
+    const resultTeam2Label = document.getElementById('result-team2-label');
+    if (resultTeam1Label && resultTeam1Label.textContent === 'Team 1') {
+        resultTeam1Label.textContent = t('team_1');
+    }
+    if (resultTeam2Label && resultTeam2Label.textContent === 'Team 2') {
+        resultTeam2Label.textContent = t('team_2');
+    }
+
 
     // Re-render dynamic elements to apply new language
     renderStandings();

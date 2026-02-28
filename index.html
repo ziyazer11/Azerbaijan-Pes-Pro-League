@@ -125,63 +125,68 @@
 
         <!-- Admin Dashboard (Only visible when logged in) -->
         <section id="admin-section" style="display: none;">
-            <h2 class="section-title">ADMIN CONTROL PANEL</h2>
+            <h2 class="section-title" data-i18n="admin_cp">ADMIN CONTROL PANEL</h2>
 
             <div class="glass-card">
-                <h3>MANAGE TEAMS</h3>
+                <h3 data-i18n="manage_teams">MANAGE TEAMS</h3>
                 <div class="form-group" style="display: flex; gap: 1rem; margin-top: 1rem;">
-                    <input type="text" id="new-team-name" placeholder="Enter Team Name">
-                    <button class="btn-primary" onclick="addTeam()" style="width: 150px;">ADD TEAM</button>
+                    <input type="text" id="new-team-name" placeholder="Enter Team Name" data-i18n="enter_team_name">
+                    <button class="btn-primary" onclick="addTeam()" style="width: 150px;" data-i18n="add_team">ADD
+                        TEAM</button>
                 </div>
             </div>
 
             <div class="glass-card">
-                <h3>TOURNAMENT ZONES</h3>
-                <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem;">Set how many teams go through
+                <h3 data-i18n="tournament_zones">TOURNAMENT ZONES</h3>
+                <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem;" data-i18n="zone_desc">Set how
+                    many teams go through
                     to each stage (from top to bottom).</p>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
-                        <label>Next Round (Top X)</label>
+                        <label data-i18n="next_round">Next Round (Top X)</label>
                         <input type="number" id="zone-next-count" value="2" onchange="updateZones()">
                     </div>
                     <div class="form-group">
-                        <label>Playoffs (Next X)</label>
+                        <label data-i18n="playoffs">Playoffs (Next X)</label>
                         <input type="number" id="zone-playoff-count" value="2" onchange="updateZones()">
                     </div>
                     <div class="form-group">
-                        <label>Out (Bottom X)</label>
+                        <label data-i18n="out_zone">Out (Bottom X)</label>
                         <input type="number" id="zone-out-count" value="2" onchange="updateZones()">
                     </div>
                 </div>
             </div>
 
             <div class="glass-card">
-                <h3>NEWS BAR</h3>
-                <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem;">Update the scrolling news
+                <h3 data-i18n="news_bar">NEWS BAR</h3>
+                <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem;" data-i18n="news_desc">Update
+                    the scrolling news
                     ticker at the top of the site.</p>
                 <div style="display: flex; gap: 1rem;">
-                    <input type="text" id="admin-news-input" placeholder="Enter latest news..." style="flex: 1;">
-                    <button class="btn-primary" onclick="updateNewsTicker()" style="width: 120px;">UPDATE</button>
+                    <input type="text" id="admin-news-input" placeholder="Enter latest news..." style="flex: 1;"
+                        data-i18n="enter_news">
+                    <button class="btn-primary" onclick="updateNewsTicker()" style="width: 120px;"
+                        data-i18n="update">UPDATE</button>
                 </div>
             </div>
 
             <div class="glass-card">
-                <h3>SCHEDULE NEW MATCH</h3>
+                <h3 data-i18n="schedule_new_match">SCHEDULE NEW MATCH</h3>
                 <form onsubmit="scheduleMatch(event)"
                     style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; margin-top: 1rem; align-items: end;">
                     <div class="form-group">
-                        <label>Team 1</label>
+                        <label data-i18n="team_1">Team 1</label>
                         <select id="match-t1" required></select>
                     </div>
                     <div class="form-group">
-                        <label>Team 2</label>
+                        <label data-i18n="team_2">Team 2</label>
                         <select id="match-t2" required></select>
                     </div>
                     <div class="form-group">
-                        <label>Date & Time</label>
+                        <label data-i18n="date_time">Date & Time</label>
                         <input type="datetime-local" id="match-datetime" required>
                     </div>
-                    <button type="submit" class="btn-primary" style="height: 45px;">CREATE</button>
+                    <button type="submit" class="btn-primary" style="height: 45px;" data-i18n="create">CREATE</button>
                 </form>
             </div>
         </section>
@@ -226,7 +231,8 @@
                 </div>
                 <div class="form-group" style="margin-top: 1rem;">
                     <label data-i18n="upload_highlights_url">UPLOAD HIGHLIGHTS URL (YouTube/Twitch/etc)</label>
-                    <input type="url" id="result-highlights" placeholder="https://youtube.com/...">
+                    <input type="url" id="result-highlights" placeholder="https://youtube.com/..."
+                        data-i18n="enter_highlights_url">
                 </div>
 
                 <div class="form-group" style="margin-top: 1.5rem;">
@@ -295,7 +301,8 @@
                 <input type="hidden" id="predict-match-id">
                 <div class="form-group">
                     <label data-i18n="your_name">Your Name</label>
-                    <input type="text" id="predict-user-name" required placeholder="Enter your display name">
+                    <input type="text" id="predict-user-name" required placeholder="Enter your display name"
+                        data-i18n="enter_display_name">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                     <div class="form-group">
