@@ -447,7 +447,9 @@ function renderSchedule() {
     if (!scheduleList) return;
     scheduleList.innerHTML = '';
 
-    const sortedMatches = [...matches].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+    // Only show unplayed matches in the public schedule
+    const unplayedMatches = matches.filter(m => !m.played);
+    const sortedMatches = unplayedMatches.sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
 
     sortedMatches.forEach(m => {
         const card = document.createElement('div');
@@ -473,6 +475,47 @@ function renderSchedule() {
             ` : ''}
         `;
         scheduleList.appendChild(card);
+    });
+}
+
+function renderMatchHistory() {
+    const historyContainer = document.getElementById('admin-match-history');
+    if (!historyContainer) return;
+    historyContainer.innerHTML = '';
+
+    if (!isAdmin) return;
+
+    const playedMatches = matches.filter(m => m.played);
+    const sortedMatches = playedMatches.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)); // Newest first
+
+    if (sortedMatches.length === 0) {
+        historyContainer.innerHTML = '<p style="color:var(--text-dim); text-align:center; padding:1rem;">No completed matches yet.</p>';
+        return;
+    }
+
+    sortedMatches.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'glass-card match-card';
+        card.style.borderLeftColor = 'var(--az-green)';
+
+        const dateStr = new Date(m.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+        card.innerHTML = `
+            <div class="match-info">
+                <strong>${dateStr}</strong><br>
+                <span style="color:var(--primary)">COMPLETED</span>
+            </div>
+            <div class="match-teams">
+                <span>${m.team1}</span>
+                <span class="vs">${m.score1} - ${m.score2}</span>
+                <span>${m.team2}</span>
+            </div>
+            <div class="admin-controls">
+                <button class="btn-sm btn-success" onclick="recordResult(${m.id})">EDIT SCORE</button>
+                <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">DEL</button>
+            </div>
+        `;
+        historyContainer.appendChild(card);
     });
 }
 
