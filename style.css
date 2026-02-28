@@ -90,7 +90,8 @@ header {
     backdrop-filter: blur(15px);
     border-bottom: 1px solid var(--glass-border);
     position: sticky;
-    top: 0;
+    top: 32px;
+    /* Set below the news ticker */
     z-index: 100;
 }
 
