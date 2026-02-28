@@ -1,7 +1,7 @@
 // --- Supabase Configuration ---
 // TO USER: Replace these with your own Supabase Project URL and Anon Key
-const SB_URL = 'YOUR_SUPABASE_PROJECT_URL';
-const SB_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SB_URL = 'https://qhfyudkkvmgpsukdcylj.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZnl1ZGtrdm1ncHN1a2RjeWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNzAzNTMsImV4cCI6MjA4Nzg0NjM1M30.s2TPO4Zf55rGwHnMTdLEKLIQe2Mhpa-FVX8v2Ee_MPk';
 
 let supabaseClient = null;
 if (SB_URL !== 'YOUR_SUPABASE_PROJECT_URL' && SB_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
