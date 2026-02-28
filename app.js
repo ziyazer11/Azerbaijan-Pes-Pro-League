@@ -107,19 +107,25 @@ function logout() {
 function updateUIForAuth() {
     const adminPanel = document.getElementById('admin-section');
     const loginBtn = document.getElementById('login-trigger-btn');
+    const joinSection = document.getElementById('join-section');
 
     if (isAdmin) {
-        adminPanel.style.display = 'block';
+        if (adminPanel) adminPanel.style.display = 'block';
+        if (joinSection) joinSection.style.display = 'none';
         loginBtn.textContent = 'LOGOUT';
         loginBtn.onclick = logout;
         document.body.classList.add('is-admin');
 
         // Sync zone inputs
-        document.getElementById('zone-next-count').value = zones.next;
-        document.getElementById('zone-playoff-count').value = zones.playoff;
-        document.getElementById('zone-out-count').value = zones.out;
+        const nextInput = document.getElementById('zone-next-count');
+        const playoffInput = document.getElementById('zone-playoff-count');
+        const outInput = document.getElementById('zone-out-count');
+        if (nextInput) nextInput.value = zones.next;
+        if (playoffInput) playoffInput.value = zones.playoff;
+        if (outInput) outInput.value = zones.out;
     } else {
-        adminPanel.style.display = 'none';
+        if (adminPanel) adminPanel.style.display = 'none';
+        if (joinSection) joinSection.style.display = 'block';
         loginBtn.textContent = 'ADMIN LOGIN';
         loginBtn.onclick = () => openModal('admin-login-modal');
         document.body.classList.remove('is-admin');
