@@ -45,6 +45,219 @@ body {
     z-index: -1;
 }
 
+/* Live Match Features */
+.live-banner {
+    background: var(--az-red);
+    color: white;
+    padding: 10px 0;
+    text-align: center;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(224, 0, 52, 0.4);
+    position: sticky;
+    top: 32px;
+    /* right below ticker */
+    z-index: 99;
+    animation: slideDown 0.3s ease-out forwards;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.live-dot {
+    width: 12px;
+    height: 12px;
+    background-color: white;
+    border-radius: 50%;
+    animation: flash 1.5s infinite alternate;
+}
+
+@keyframes flash {
+    0% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+.live-badge {
+    background: var(--az-red);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    display: inline-block;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(224, 0, 52, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(224, 0, 52, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(224, 0, 52, 0);
+    }
+}
+
+/* Weekly Awards */
+.awards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.award-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(20, 20, 25, 0.8) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.1);
+    transition: transform 0.3s ease;
+    border-radius: 12px;
+}
+
+.award-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.1), transparent);
+    transform: rotate(45deg);
+    animation: gold-shimmer 3s infinite linear;
+}
+
+@keyframes gold-shimmer {
+    0% {
+        transform: translateX(-100%) rotate(45deg);
+    }
+
+    100% {
+        transform: translateX(100%) rotate(45deg);
+    }
+}
+
+.award-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(255, 215, 0, 0.2);
+}
+
+.award-silver {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.1) 0%, rgba(20, 20, 25, 0.8) 100%);
+    border-color: rgba(192, 192, 192, 0.3);
+    box-shadow: 0 10px 30px rgba(192, 192, 192, 0.1);
+}
+
+.award-silver::before {
+    background: linear-gradient(to right, transparent, rgba(192, 192, 192, 0.1), transparent);
+}
+
+.award-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+}
+
+.award-silver .award-icon {
+    filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.5));
+}
+
+.award-team {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+    margin: 0.5rem 0;
+}
+
+.award-stat {
+    font-size: 1rem;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Trash Talk */
+.trash-talk-card {
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+}
+
+.trash-talk-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+.trash-talk-card.on-fire {
+    border-color: rgba(255, 100, 0, 0.5);
+    background: linear-gradient(135deg, rgba(255, 100, 0, 0.05) 0%, var(--bg-card) 100%);
+    box-shadow: 0 0 15px rgba(255, 100, 0, 0.1);
+}
+
+.btn-vote {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text-dim);
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    font-family: var(--font-main);
+}
+
+.btn-vote i {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-vote:hover:not(:disabled) {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(0, 255, 65, 0.1);
+}
+
+.btn-vote.voted {
+    color: var(--primary);
+    border-color: var(--primary);
+    opacity: 0.7;
+    cursor: default;
+}
+
 /* News Ticker Bar */
 .news-ticker-bar {
     background: linear-gradient(90deg, #001f3f, #001122);

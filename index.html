@@ -105,6 +105,14 @@
             </div>
         </section>
 
+        <!-- Weekly Awards Section -->
+        <section id="weekly-awards" style="margin-bottom: 3rem;">
+            <h2 class="section-title" style="color: gold;" data-i18n="weekly_awards">WEEKLY AWARDS</h2>
+            <div id="awards-container" class="awards-grid">
+                <!-- Awards rendered dynamically -->
+            </div>
+        </section>
+
         <section id="results">
             <h2 class="section-title" style="color: var(--secondary);" data-i18n="latest_results">LATEST RESULTS</h2>
             <div id="results-list" class="schedule-list" style="margin-bottom: 4rem;">
@@ -117,6 +125,21 @@
             <h2 class="section-title" data-i18n="trash_talk">🔥 TRASH TALK BOARD</h2>
             <div id="trash-talk-list" class="trash-talk-grid">
                 <!-- JS Render -->
+            </div>
+        </section>
+
+        <!-- Trash Talk Section -->
+        <section id="trash-talk-section" style="margin-bottom: 3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="section-title" style="color: var(--accent);" data-i18n="trash_talk_board">TRASH TALK BOARD
+                </h2>
+                <button class="btn-primary" onclick="openModal('trash-talk-modal')"
+                    style="padding: 0.5rem 1rem; border-radius: 20px;">
+                    <i data-lucide="message-square"></i> <span data-i18n="post_trash_talk">POST</span>
+                </button>
+            </div>
+            <div id="trash-talk-container" class="awards-grid" style="gap: 1rem;">
+                <!-- Trash talk posts rendered here -->
             </div>
         </section>
 
@@ -194,6 +217,25 @@
             </div>
 
             <div class="glass-card">
+                <h3 data-i18n="global_timezone">GLOBAL TIMEZONE</h3>
+                <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem;" data-i18n="timezone_desc">Set
+                    the timezone used to display all match schedules and history dates.</p>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <select id="admin-timezone-select" style="flex: 1;">
+                        <option value="Asia/Baku">Asia/Baku (AZT)</option>
+                        <option value="Europe/London">Europe/London (GMT/BST)</option>
+                        <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                        <option value="Europe/Istanbul">Europe/Istanbul (TRT)</option>
+                        <option value="America/New_York">America/New_York (EST/EDT)</option>
+                        <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                        <option value="UTC">UTC</option>
+                    </select>
+                    <button class="btn-primary" onclick="updateTimezone()" style="width: 120px;"
+                        data-i18n="save">SAVE</button>
+                </div>
+            </div>
+
+            <div class="glass-card">
                 <h3 data-i18n="schedule_new_match">SCHEDULE NEW MATCH</h3>
                 <form onsubmit="scheduleMatch(event)"
                     style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; margin-top: 1rem; align-items: end;">
@@ -209,11 +251,43 @@
                         <label data-i18n="date_time">Date & Time</label>
                         <input type="datetime-local" id="match-datetime" required>
                     </div>
+                    <div class="form-group">
+                        <label data-i18n="week">Week</label>
+                        <input type="number" id="match-week" value="1" min="1" required>
+                    </div>
                     <button type="submit" class="btn-primary" style="height: 45px;" data-i18n="create">CREATE</button>
                 </form>
             </div>
         </section>
     </main>
+
+    <!-- Trash Talk Modal -->
+    <div id="trash-talk-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('trash-talk-modal')"><i data-lucide="x"></i></span>
+            <h2 data-i18n="post_trash_talk" style="color: var(--accent); margin-bottom: 1rem;">POST TRASH TALK</h2>
+            <form id="trash-talk-form" onsubmit="submitTrashTalk(event)">
+                <div class="form-group">
+                    <label data-i18n="select_match">Select Match</label>
+                    <select id="trash-talk-match-id" required>
+                        <option value="">-- General / No Match --</option>
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="your_name">Your Name</label>
+                    <input type="text" id="trash-talk-author" placeholder="Manager Name" required
+                        data-i18n="enter_display_name">
+                </div>
+                <div class="form-group">
+                    <label data-i18n="message">Message</label>
+                    <textarea id="trash-talk-message" rows="4" placeholder="Let them have it..." required></textarea>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;"
+                    data-i18n="post_it">POST IT 🔥</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Admin Login Modal -->
     <div id="admin-login-modal" class="modal">

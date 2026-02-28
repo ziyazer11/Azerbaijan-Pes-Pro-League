@@ -22,6 +22,8 @@ let isAdmin = false;
 let tickerText = "Welcome to Azerbaijan Pes Pro League!";
 let predictionsGroup = []; // All raw predictions
 let leaderboard = []; // Prepared leaderboard data
+let globalTimezone = 'Asia/Baku'; // Default timezone
+let trashTalkPosts = []; // All trash talk posts
 
 // Credentials
 const ADMIN_EMAIL = "ziyazer11@gmail.com";
@@ -80,11 +82,12 @@ async function loadInitialData() {
         if (zonesError && zonesError.code !== 'PGRST116') throw zonesError;
         if (zonesData) zones = zonesData;
 
-        // Load Settings (Ticker) - Handle potential missing table
+        // Load Settings (Ticker & Timezone) - Handle potential missing table
         try {
             const { data: settingsData, error: sErr } = await supabaseClient.from('settings').select('*').eq('id', 'global').single();
             if (settingsData && !sErr) {
-                tickerText = settingsData.newsText;
+                tickerText = settingsData.newsText || tickerText;
+                globalTimezone = settingsData.global_timezone || globalTimezone;
                 updateTickerUI();
             }
         } catch (e) {
@@ -102,9 +105,24 @@ async function loadInitialData() {
             console.warn("Predictions table not found or inaccessible.");
         }
 
+        // Load Trash Talk
+        try {
+            const { data: ttData, error: ttErr } = await supabaseClient
+                .from('trash_talk')
+                .select('*')
+                .order('votes', { ascending: false })
+                .order('created_at', { ascending: false });
+            if (ttData && !ttErr) {
+                trashTalkPosts = ttData;
+            }
+        } catch (e) {
+            console.warn("Trash talk table not found or inaccessible.");
+        }
+
         renderStandings();
         renderSchedule();
         renderMatchHistory();
+        renderTrashTalk();
         populateSelects();
         startCountdownTimer();
 
@@ -136,6 +154,76 @@ async function updateNewsTicker() {
     updateTickerUI();
     input.value = '';
     alert(t('alert_news_updated'));
+}
+
+async function toggleLiveMatch(matchId, isCurrentlyLive) {
+    if (!isAdmin || !supabaseClient) return;
+
+    // Set all other matches to not live first if going live
+    if (!isCurrentlyLive) {
+        await supabaseClient.from('matches').update({ is_live: false }).neq('id', matchId);
+    }
+
+    // Toggle the target match
+    const { error } = await supabaseClient.from('matches').update({ is_live: !isCurrentlyLive }).eq('id', matchId);
+    if (error) {
+        alert(t('alert_error_generic') + error.message);
+        return;
+    }
+
+    await loadInitialData();
+}
+
+function checkForLiveMatch() {
+    const liveMatch = matches.find(m => m.is_live && !m.played);
+    const banner = document.getElementById('live-match-banner');
+    const bannerText = document.getElementById('live-banner-text');
+
+    if (liveMatch && banner && bannerText) {
+        banner.style.display = 'flex';
+        bannerText.textContent = `🔴 LIVE NOW: ${liveMatch.team1} vs ${liveMatch.team2} (Week ${liveMatch.week || 1})`;
+    } else if (banner) {
+        banner.style.display = 'none';
+    }
+}
+
+// Check for live match roughly every 30 seconds
+setInterval(async () => {
+    if (supabaseClient) {
+        const { data } = await supabaseClient.from('matches').select('id, is_live, team1, team2, played, week');
+        if (data) {
+            // Merge just the live status into local state quietly
+            data.forEach(serverMatch => {
+                const localMatch = matches.find(m => m.id === serverMatch.id);
+                if (localMatch) {
+                    localMatch.is_live = serverMatch.is_live;
+                }
+            });
+            checkForLiveMatch();
+            renderSchedule(); // re-render schedule to show/hide pulsing live badge
+        }
+    }
+}, 30000);
+
+async function updateTimezone() {
+    if (!isAdmin || !supabaseClient) return;
+    const select = document.getElementById('admin-timezone-select');
+    const newTz = select.value;
+    if (!newTz) return;
+
+    const { error } = await supabaseClient.from('settings').upsert([{ id: 'global', global_timezone: newTz }]);
+    if (error) {
+        alert(t('alert_error_generic') + error.message);
+        return;
+    }
+
+    globalTimezone = newTz;
+    alert("Timezone updated to " + newTz);
+
+    // Re-render UI with new timezone
+    renderSchedule();
+    renderMatchHistory();
+    updateCountdown();
 }
 
 // --- Countdown Logic ---
@@ -226,13 +314,16 @@ function updateUIForAuth() {
         loginBtn.onclick = logout;
         document.body.classList.add('is-admin');
 
-        // Sync zone inputs
+        // Sync inputs
         const nextInput = document.getElementById('zone-next-count');
         const playoffInput = document.getElementById('zone-playoff-count');
         const outInput = document.getElementById('zone-out-count');
+        const tzSelect = document.getElementById('admin-timezone-select');
+
         if (nextInput) nextInput.value = zones.next;
         if (playoffInput) playoffInput.value = zones.playoff;
         if (outInput) outInput.value = zones.out;
+        if (tzSelect) tzSelect.value = globalTimezone;
     } else {
         if (adminPanel) adminPanel.style.display = 'none';
         if (joinSection) joinSection.style.display = 'block';
@@ -240,9 +331,12 @@ function updateUIForAuth() {
         loginBtn.onclick = () => openModal('admin-login-modal');
         document.body.classList.remove('is-admin');
     }
+
+    checkForLiveMatch();
     renderStandings();
     renderSchedule();
     renderMatchHistory();
+    renderWeeklyAwards();
 }
 
 // --- Team Management ---
@@ -325,6 +419,7 @@ async function scheduleMatch(e) {
     const t1 = document.getElementById('match-t1').value;
     const t2 = document.getElementById('match-t2').value;
     const dateTime = document.getElementById('match-datetime').value;
+    const week = parseInt(document.getElementById('match-week')?.value) || 1;
 
     if (t1 === t2) {
         alert(t('alert_same_team'));
@@ -339,6 +434,8 @@ async function scheduleMatch(e) {
         team1: t1,
         team2: t2,
         dateTime: dateTime,
+        week: week,
+        is_live: false,
         played: false,
         score1: 0,
         score2: 0
@@ -380,7 +477,8 @@ async function saveMatchResult(e) {
         score1: s1,
         score2: s2,
         highlightsUrl: highlights,
-        played: true
+        played: true,
+        is_live: false // Turn off live status when result is saved
     }).eq('id', matchId);
 
     if (error) {
@@ -575,12 +673,21 @@ function renderSchedule() {
     sortedUnplayed.forEach(m => {
         const card = document.createElement('div');
         card.className = 'glass-card match-card';
-        const dateStr = new Date(m.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+        // Format with timezone
+        const dateObj = new Date(m.dateTime);
+        const dateStr = new Intl.DateTimeFormat(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+            timeZone: globalTimezone
+        }).format(dateObj);
+
+        const liveBadgeHTML = m.is_live ? `<div class="live-badge">🔴 LIVE</div>` : `<strong>${dateStr}</strong>`;
 
         card.innerHTML = `
             <div class="match-info">
-                <strong>${dateStr}</strong><br>
-                <span style="color:var(--text-dim)">${t('scheduled')}</span><br>
+                ${liveBadgeHTML}<br>
+                <span style="color:var(--text-dim)">${t('scheduled')} - Week ${m.week || 1}</span><br>
                 <button class="btn-predict" onclick="openPredictionModal(${m.id})">${t('predict')}</button>
             </div>
             <div class="match-teams">
@@ -590,6 +697,7 @@ function renderSchedule() {
             </div>
             ${isAdmin ? `
                 <div class="admin-controls">
+                    <button class="btn-sm ${m.is_live ? 'btn-danger' : 'btn-primary'}" onclick="toggleLiveMatch(${m.id}, ${m.is_live})">${m.is_live ? 'END LIVE' : 'GO LIVE'}</button>
                     <button class="btn-sm btn-success" onclick="recordResult(${m.id})">${t('edit_score')}</button>
                     <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">${t('del')}</button>
                 </div>
@@ -609,7 +717,14 @@ function renderSchedule() {
             const card = document.createElement('div');
             card.className = 'glass-card match-card';
             card.style.borderLeft = '4px solid var(--az-green)';
-            const dateStr = new Date(m.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+            // Format with timezone
+            const dateObj = new Date(m.dateTime);
+            const dateStr = new Intl.DateTimeFormat(undefined, {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: globalTimezone
+            }).format(dateObj);
 
             card.innerHTML = `
                 <div class="match-info">
@@ -690,7 +805,13 @@ function renderMatchHistory() {
         card.className = 'glass-card match-card';
         card.style.borderLeftColor = 'var(--az-green)';
 
-        const dateStr = new Date(m.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+        // Format with timezone
+        const dateObj = new Date(m.dateTime);
+        const dateStr = new Intl.DateTimeFormat(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+            timeZone: globalTimezone
+        }).format(dateObj);
 
         card.innerHTML = `
             <div class="match-info">
@@ -714,6 +835,7 @@ function renderMatchHistory() {
     });
     // Refresh icons since we injected some
     lucide.createIcons();
+    renderWeeklyAwards(); // Update awards when history changes
 }
 
 function calculateLeaderboard() {
@@ -747,6 +869,81 @@ function renderLeaderboard() {
     });
 }
 
+function renderWeeklyAwards() {
+    const container = document.getElementById('awards-container');
+    if (!container) return;
+
+    // Get latest week from played matches
+    const playedMatches = matches.filter(m => m.played);
+    if (playedMatches.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-dim); text-align:center;">${t('no_awards_yet')}</p>`;
+        return;
+    }
+
+    const latestWeek = Math.max(...playedMatches.map(m => parseInt(m.week) || 1));
+    const thisWeekMatches = playedMatches.filter(m => (parseInt(m.week) || 1) === latestWeek);
+
+    if (thisWeekMatches.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-dim); text-align:center;">${t('no_awards_yet')}</p>`;
+        return;
+    }
+
+    // 1. Team of the Week (Most goals scored)
+    let bestTeamStats = { name: '', goals: -1 };
+
+    // Create map of team to goals this week
+    const teamGoals = {};
+    const teamGD = {}; // For biggest win
+
+    thisWeekMatches.forEach(m => {
+        teamGoals[m.team1] = (teamGoals[m.team1] || 0) + m.score1;
+        teamGoals[m.team2] = (teamGoals[m.team2] || 0) + m.score2;
+
+        // Track GD for biggest win
+        const gd = Math.abs(m.score1 - m.score2);
+        const winner = m.score1 > m.score2 ? m.team1 : (m.score2 > m.score1 ? m.team2 : 'Draw');
+
+        if (winner !== 'Draw' && (!teamGD[winner] || gd > teamGD[winner])) {
+            teamGD[winner] = { gd: gd, match: `${m.team1} ${m.score1}-${m.score2} ${m.team2}` };
+        }
+    });
+
+    Object.entries(teamGoals).forEach(([team, goals]) => {
+        if (goals > bestTeamStats.goals) {
+            bestTeamStats = { name: team, goals: goals };
+        }
+    });
+
+    // 2. Biggest Win
+    let biggestWin = { name: '', gd: -1, matchStr: '' };
+    Object.entries(teamGD).forEach(([team, stats]) => {
+        if (stats.gd > biggestWin.gd) {
+            biggestWin = { name: team, gd: stats.gd, matchStr: stats.match };
+        }
+    });
+
+    container.innerHTML = `
+        <div class="award-card">
+            <i data-lucide="crown" class="award-icon" style="color: gold;"></i>
+            <h3 style="color: gold; margin-bottom: 0.5rem;" data-i18n="team_of_the_week">${t('team_of_the_week')} (Week ${latestWeek})</h3>
+            <div class="award-team">${bestTeamStats.name || 'N/A'}</div>
+            <div class="award-stat">${bestTeamStats.goals} Goals</div>
+        </div>
+        
+        <div class="award-card award-silver">
+            <i data-lucide="zap" class="award-icon" style="color: silver;"></i>
+            <h3 style="color: silver; margin-bottom: 0.5rem;" data-i18n="biggest_win">${t('biggest_win')} (Week ${latestWeek})</h3>
+            <div class="award-team">${biggestWin.name || 'N/A'}</div>
+            <div class="award-stat">+${biggestWin.gd > 0 ? biggestWin.gd : '-'} GD</div>
+            <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem;">${biggestWin.matchStr}</div>
+        </div>
+    `;
+
+    lucide.createIcons();
+    // After HTML update, apply safe translations
+    translatePage();
+}
+
 function populateSelects() {
     const s1 = document.getElementById('match-t1');
     const s2 = document.getElementById('match-t2');
@@ -762,6 +959,117 @@ function populateSelects() {
     });
 }
 
+
+// --- Trash Talk ---
+async function submitTrashTalk(e) {
+    e.preventDefault();
+    if (!supabaseClient) return;
+
+    const matchId = document.getElementById('trash-talk-match-id').value;
+    const author = document.getElementById('trash-talk-author').value;
+    const message = document.getElementById('trash-talk-message').value;
+
+    const postData = {
+        author: author,
+        message: message,
+        votes: 0
+    };
+    if (matchId) postData.match_id = parseInt(matchId);
+
+    const { error } = await supabaseClient.from('trash_talk').insert([postData]);
+
+    if (error) {
+        alert(t('alert_error_generic') + error.message);
+        return;
+    }
+
+    closeModal('trash-talk-modal');
+    e.target.reset();
+    await loadInitialData(); // Re-fetch and re-render
+}
+
+async function voteTrashTalk(id) {
+    if (!supabaseClient) return;
+
+    // Prevent multiple votes from same browser
+    const votedPosts = JSON.parse(localStorage.getItem('pesLeagueVotedPosts') || '[]');
+    if (votedPosts.includes(id)) {
+        return; // Already voted
+    }
+
+    const post = trashTalkPosts.find(p => p.id === id);
+    if (!post) return;
+
+    const { error } = await supabaseClient
+        .from('trash_talk')
+        .update({ votes: post.votes + 1 })
+        .eq('id', id);
+
+    if (error) {
+        alert(t('alert_error_generic') + error.message);
+        return;
+    }
+
+    votedPosts.push(id);
+    localStorage.setItem('pesLeagueVotedPosts', JSON.stringify(votedPosts));
+    post.votes += 1; // Optimistic update
+
+    // Re-sort and render
+    trashTalkPosts.sort((a, b) => {
+        if (b.votes !== a.votes) return b.votes - a.votes;
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    renderTrashTalk();
+}
+
+function renderTrashTalk() {
+    const container = document.getElementById('trash-talk-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (trashTalkPosts.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-dim); text-align:center;">No trash talk yet. Be the first!</p>`;
+        return;
+    }
+
+    const votedPosts = JSON.parse(localStorage.getItem('pesLeagueVotedPosts') || '[]');
+
+    // Render top 6 posts
+    trashTalkPosts.slice(0, 6).forEach(post => {
+        const card = document.createElement('div');
+        card.className = `glass-card trash-talk-card ${post.votes > 10 ? 'on-fire' : ''}`;
+
+        let matchContext = 'General banter';
+        if (post.match_id) {
+            const match = matches.find(m => m.id === post.match_id);
+            if (match) matchContext = `RE: ${match.team1} vs ${match.team2}`;
+        }
+
+        const hasVoted = votedPosts.includes(post.id);
+
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 0.5rem;">
+                <div>
+                    <strong style="color:var(--secondary); font-size: 1.1rem;">${post.author}</strong>
+                    <div style="font-size: 0.75rem; color:var(--text-dim);">${matchContext}</div>
+                </div>
+                <button 
+                    class="btn-vote ${hasVoted ? 'voted' : ''}" 
+                    onclick="voteTrashTalk(${post.id})" 
+                    ${hasVoted ? 'disabled' : ''}
+                    title="${hasVoted ? 'Already voted' : 'Upvote'}"
+                >
+                    <i data-lucide="thumbs-up"></i> ${post.votes}
+                </button>
+            </div>
+            <p style="font-size: 0.95rem; margin-top: 0.5rem; word-break: break-word;">${post.message}</p>
+        `;
+        container.appendChild(card);
+    });
+
+    lucide.createIcons();
+}
 
 // --- Utils ---
 async function updateZones() {
@@ -912,6 +1220,15 @@ const i18n = {
         "hero_desc": "The elite competition for PES players around the world. Register now and prove your skills on the pitch.",
         "league_standings": "LEAGUE STANDINGS",
         "latest_results": "LATEST RESULTS",
+        "weekly_awards": "WEEKLY AWARDS",
+        "team_of_the_week": "TEAM OF THE WEEK",
+        "biggest_win": "BIGGEST WIN",
+        "no_awards_yet": "No awards yet for this week.",
+        "trash_talk_board": "TRASH TALK BOARD",
+        "post_trash_talk": "POST TRASH TALK",
+        "select_match": "Select Match",
+        "message": "Message",
+        "post_it": "POST IT 🔥",
         "match_schedule": "MATCH SCHEDULE",
         "team": "TEAM",
         "form": "FORM",
@@ -951,6 +1268,9 @@ const i18n = {
         "news_desc": "Update the scrolling news ticker at the top of the site.",
         "enter_news": "Enter latest news...",
         "update": "UPDATE",
+        "global_timezone": "GLOBAL TIMEZONE",
+        "timezone_desc": "Set the timezone used to display all match schedules and history dates.",
+        "save": "SAVE",
         "schedule_new_match": "SCHEDULE NEW MATCH",
         "team_1": "Team 1",
         "team_2": "Team 2",
@@ -1007,6 +1327,15 @@ const i18n = {
         "hero_desc": "Bütün dünyadakı PES oyunçuları üçün elit yarışma. İndi qeydiyyatdan keçin və meydanda bacarıqlarınızı sübut edin.",
         "league_standings": "LİQA CƏDVƏLİ",
         "latest_results": "SON NƏTİCƏLƏR",
+        "weekly_awards": "HƏFTƏNİN MÜKAFATLARI",
+        "team_of_the_week": "HƏFTƏNİN KOMANDASI",
+        "biggest_win": "ƏN BÖYÜK QƏLƏBƏ",
+        "no_awards_yet": "Bu həftə üçün hələ mükafat yoxdur.",
+        "trash_talk_board": "TRASH TALK LÖVHƏSİ",
+        "post_trash_talk": "TRASH TALK PAYLAŞ",
+        "select_match": "Oyun Seçin",
+        "message": "Mesaj",
+        "post_it": "PAYLAŞ 🔥",
         "match_schedule": "OYUN TƏQVİMİ",
         "team": "KOMANDA",
         "form": "FORMA",
@@ -1046,6 +1375,9 @@ const i18n = {
         "news_desc": "Saytın yuxarısındakı hərəkətli xəbər zolağını yeniləyin.",
         "enter_news": "Ən son xəbəri daxil edin...",
         "update": "YENİLƏ",
+        "global_timezone": "QİMMƏCİ SAAT QURŞAĞI",
+        "timezone_desc": "Bütün oyunların təqvimini və tarixçəsini göstərmək üçün saat qurşağını təyin edin.",
+        "save": "YADDA SAXLA",
         "schedule_new_match": "YENİ OYUN PLANLAŞDIR",
         "team_1": "Komanda 1",
         "team_2": "Komanda 2",
