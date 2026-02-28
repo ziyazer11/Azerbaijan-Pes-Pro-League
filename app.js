@@ -19,6 +19,9 @@ let teams = [];
 let matches = [];
 let zones = { next: 2, playoff: 2, out: 2 };
 let isAdmin = false;
+let tickerText = "Welcome to Azerbaijan Pes Pro League!";
+let predictionsGroup = []; // All raw predictions
+let leaderboard = []; // Prepared leaderboard data
 
 // Credentials
 const ADMIN_EMAIL = "ziyazer11@gmail.com";
@@ -71,8 +74,22 @@ async function loadInitialData() {
             .select('*')
             .single();
 
-        if (zonesError && zonesError.code !== 'PGRST116') throw zonesError; // Ignore if no zones record yet
+        if (zonesError && zonesError.code !== 'PGRST116') throw zonesError;
         if (zonesData) zones = zonesData;
+
+        // Load Settings (Ticker)
+        const { data: settingsData } = await supabaseClient.from('settings').select('*').eq('id', 'global').single();
+        if (settingsData) {
+            tickerText = settingsData.newsText;
+            updateTickerUI();
+        }
+
+        // Load Predictions
+        const { data: predData } = await supabaseClient.from('predictions').select('*');
+        if (predData) {
+            predictionsGroup = predData;
+            calculateLeaderboard();
+        }
 
         renderStandings();
         renderSchedule();
@@ -83,6 +100,28 @@ async function loadInitialData() {
     } catch (err) {
         console.error('Error loading data:', err.message);
     }
+}
+
+function updateTickerUI() {
+    const el = document.getElementById('ticker-content');
+    if (el) el.textContent = tickerText;
+}
+
+async function updateNewsTicker() {
+    if (!isAdmin || !supabaseClient) return;
+    const input = document.getElementById('admin-news-input');
+    const text = input.value;
+    if (!text) return;
+
+    const { error } = await supabaseClient.from('settings').upsert([{ id: 'global', newsText: text }]);
+    if (error) {
+        alert("Error updating news: " + error.message);
+        return;
+    }
+    tickerText = text;
+    updateTickerUI();
+    input.value = '';
+    alert("Official News Updated!");
 }
 
 // --- Countdown Logic ---
@@ -296,26 +335,59 @@ async function recordResult(matchId) {
     const match = matches.find(m => m.id === matchId);
     if (!match) return;
 
-    const score1 = parseInt(prompt(`Score for ${match.team1}:`, 0));
-    const score2 = parseInt(prompt(`Score for ${match.team2}:`, 0));
+    document.getElementById('result-match-id').value = matchId;
+    document.getElementById('result-team1-label').textContent = match.team1;
+    document.getElementById('result-team2-label').textContent = match.team2;
+    document.getElementById('result-score1').value = match.score1;
+    document.getElementById('result-score2').value = match.score2;
+    document.getElementById('result-highlights').value = match.highlightsUrl || '';
 
-    if (isNaN(score1) || isNaN(score2)) return;
+    openModal('result-modal');
+}
 
-    if (!supabaseClient) {
-        alert("Database not connected.");
-        return;
-    }
+async function saveMatchResult(e) {
+    e.preventDefault();
+    if (!isAdmin || !supabaseClient) return;
+
+    const matchId = parseInt(document.getElementById('result-match-id').value);
+    const s1 = parseInt(document.getElementById('result-score1').value);
+    const s2 = parseInt(document.getElementById('result-score2').value);
+    const highlights = document.getElementById('result-highlights').value;
+
     const { error } = await supabaseClient.from('matches').update({
-        score1: score1,
-        score2: score2,
+        score1: s1,
+        score2: s2,
+        highlightsUrl: highlights,
         played: true
     }).eq('id', matchId);
 
     if (error) {
-        alert("Error recording result: " + error.message);
+        alert("Error saving result: " + error.message);
         return;
     }
 
+    // --- Automated Prediction Scoring ---
+    const matchPredictions = predictionsGroup.filter(p => p.matchId === matchId);
+    for (const pred of matchPredictions) {
+        let pts = 0;
+        // Exact score = 3
+        if (pred.score1 === s1 && pred.score2 === s2) {
+            pts = 3;
+        }
+        // Correct winner/draw = 1
+        else {
+            const predWinner = pred.score1 > pred.score2 ? 1 : (pred.score1 < pred.score2 ? 2 : 0);
+            const realWinner = s1 > s2 ? 1 : (s1 < s2 ? 2 : 0);
+            if (predWinner === realWinner) pts = 1;
+        }
+
+        if (pts > 0) {
+            await supabaseClient.from('predictions').update({ points: pts }).eq('id', pred.id);
+        }
+    }
+
+    closeModal('result-modal');
+    alert("Result and points updated!");
     await recalculateAndSyncStandings();
 }
 
@@ -397,6 +469,21 @@ async function recalculateAndSyncStandings() {
 }
 
 // --- Rendering ---
+function getTeamForm(teamName) {
+    const teamMatches = matches
+        .filter(m => m.played && (m.team1 === teamName || m.team2 === teamName))
+        .sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)) // Newest first
+        .slice(0, 5)
+        .reverse(); // Display oldest to newest (left to right)
+
+    return teamMatches.map(m => {
+        if (m.score1 === m.score2) return { label: 'D', class: 'draw' };
+        const isTeam1 = m.team1 === teamName;
+        const won = isTeam1 ? m.score1 > m.score2 : m.score2 > m.score1;
+        return won ? { label: 'W', class: 'win' } : { label: 'L', class: 'loss' };
+    });
+}
+
 function renderStandings() {
     if (!standingsBody) return;
     standingsBody.innerHTML = '';
@@ -440,6 +527,11 @@ function renderStandings() {
             <td>${t.draws}</td>
             <td>${t.losses}</td>
             <td>${t.gd > 0 ? '+' : ''}${t.gd}</td>
+            <td>
+                <div class="form-container">
+                    ${getTeamForm(t.name).map(res => `<span class="form-dot ${res.class}">${res.label}</span>`).join('')}
+                </div>
+            </td>
             <td class="pts">${t.pts}</td>
         `;
         standingsBody.appendChild(row);
@@ -463,11 +555,12 @@ function renderSchedule() {
         card.innerHTML = `
             <div class="match-info">
                 <strong>${dateStr}</strong><br>
-                ${m.played ? '<span style="color:var(--primary)">COMPLETED</span>' : '<span style="color:var(--text-dim)">SCHEDULED</span>'}
+                <span style="color:var(--text-dim)">SCHEDULED</span><br>
+                <button class="btn-predict" onclick="openPredictionModal(${m.id})">PREDICT</button>
             </div>
             <div class="match-teams">
                 <span>${m.team1}</span>
-                <span class="vs">${m.played ? `${m.score1} - ${m.score2}` : 'VS'}</span>
+                <span class="vs">VS</span>
                 <span>${m.team2}</span>
             </div>
             ${isAdmin ? `
@@ -479,6 +572,40 @@ function renderSchedule() {
         `;
         scheduleList.appendChild(card);
     });
+}
+
+function openPredictionModal(matchId) {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+
+    document.getElementById('predict-match-id').value = matchId;
+    document.getElementById('predict-team1-label').textContent = `${match.team1} Score`;
+    document.getElementById('predict-team2-label').textContent = `${match.team2} Score`;
+    openModal('prediction-modal');
+}
+
+async function submitPrediction(e) {
+    e.preventDefault();
+    if (!supabaseClient) return;
+
+    const matchId = parseInt(document.getElementById('predict-match-id').value);
+    const userName = document.getElementById('predict-user-name').value;
+    const score1 = parseInt(document.getElementById('predict-score1').value);
+    const score2 = parseInt(document.getElementById('predict-score2').value);
+
+    const { error } = await supabaseClient.from('predictions').insert([{
+        matchId, userName, score1, score2
+    }]);
+
+    if (error) {
+        alert("Error submitting prediction: " + error.message);
+        return;
+    }
+
+    alert("Prediction submitted! Good luck!");
+    closeModal('prediction-modal');
+    e.target.reset();
+    await loadInitialData();
 }
 
 function renderMatchHistory() {
@@ -504,7 +631,8 @@ function renderMatchHistory() {
         card.innerHTML = `
             <div class="match-info">
                 <strong>${dateStr}</strong><br>
-                <span style="color:var(--primary)">COMPLETED</span>
+                <span style="color:var(--primary)">COMPLETED</span><br>
+                ${m.highlightsUrl ? `<a href="${m.highlightsUrl}" target="_blank" class="btn-watch"><i data-lucide="play-circle"></i> WATCH</a>` : ''}
             </div>
             <div class="match-teams">
                 <span>${m.team1}</span>
@@ -519,6 +647,39 @@ function renderMatchHistory() {
             ` : ''}
         `;
         historyContainer.appendChild(card);
+    });
+    // Refresh icons since we injected some
+    lucide.createIcons();
+}
+
+function calculateLeaderboard() {
+    const scores = {};
+    predictionsGroup.forEach(p => {
+        if (!scores[p.userName]) scores[p.userName] = 0;
+        scores[p.userName] += p.points || 0;
+    });
+
+    leaderboard = Object.entries(scores)
+        .map(([name, pts]) => ({ name, pts }))
+        .sort((a, b) => b.pts - a.pts);
+
+    renderLeaderboard();
+}
+
+function renderLeaderboard() {
+    const body = document.getElementById('leaderboard-body');
+    if (!body) return;
+    body.innerHTML = '';
+
+    leaderboard.forEach((user, index) => {
+        const row = `
+            <tr>
+                <td>#${index + 1}</td>
+                <td>${user.name}</td>
+                <td><strong>${user.pts}</strong> pts</td>
+            </tr>
+        `;
+        body.innerHTML += row;
     });
 }
 

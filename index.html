@@ -13,6 +13,11 @@
 </head>
 
 <body>
+    <div id="news-ticker-bar" class="news-ticker-bar">
+        <div class="ticker-wrapper">
+            <div id="ticker-content" class="ticker-content">Loading latest news...</div>
+        </div>
+    </div>
     <div class="bg-gradient"></div>
 
     <header>
@@ -42,6 +47,7 @@
                     </svg>
                 </a>
             </div>
+            <button class="btn-leaderboard" onclick="openModal('leaderboard-modal')">LEADERBOARD</button>
             <button class="btn-history" onclick="openModal('match-history-modal')">HISTORY</button>
             <button id="login-trigger-btn" class="btn-admin">ADMIN LOGIN</button>
         </div>
@@ -67,6 +73,7 @@
                             <th>D</th>
                             <th>L</th>
                             <th>GD</th>
+                            <th>FORM</th>
                             <th class="pts">PTS</th>
                         </tr>
                     </thead>
@@ -136,6 +143,16 @@
             </div>
 
             <div class="glass-card">
+                <h3>NEWS BAR</h3>
+                <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem;">Update the scrolling news
+                    ticker at the top of the site.</p>
+                <div style="display: flex; gap: 1rem;">
+                    <input type="text" id="admin-news-input" placeholder="Enter latest news..." style="flex: 1;">
+                    <button class="btn-primary" onclick="updateNewsTicker()" style="width: 120px;">UPDATE</button>
+                </div>
+            </div>
+
+            <div class="glass-card">
                 <h3>SCHEDULE NEW MATCH</h3>
                 <form onsubmit="scheduleMatch(event)"
                     style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1rem; margin-top: 1rem; align-items: end;">
@@ -175,6 +192,31 @@
             </form>
         </div>
     </div>
+    <!-- Result Modal (Admin) -->
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('result-modal')">&times;</span>
+            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--primary);">RECORD RESULT</h2>
+            <form id="result-form" onsubmit="saveMatchResult(event)">
+                <input type="hidden" id="result-match-id">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label id="result-team1-label">Team 1</label>
+                        <input type="number" id="result-score1" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label id="result-team2-label">Team 2</label>
+                        <input type="number" id="result-score2" required min="0">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>Highlight Link (YouTube/Twitch/etc)</label>
+                    <input type="url" id="result-highlights" placeholder="https://youtube.com/...">
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 1rem;">SAVE RESULT</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Match History Modal -->
     <div id="match-history-modal" class="modal">
@@ -185,6 +227,56 @@
             <div id="admin-match-history" class="schedule-list history-scroll">
                 <!-- JS Render -->
             </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('leaderboard-modal')">&times;</span>
+            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--accent);">PREDICTION
+                LEADERBOARD</h2>
+            <div id="leaderboard-content">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>RANK</th>
+                            <th>USER</th>
+                            <th>POINTS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <!-- JS Render -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prediction Modal -->
+    <div id="prediction-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('prediction-modal')">&times;</span>
+            <h2 id="predict-title"
+                style="font-family: var(--font-heading); margin-bottom: 1rem; color: var(--az-blue);">PREDICT SCORE</h2>
+            <form id="prediction-form" onsubmit="submitPrediction(event)">
+                <input type="hidden" id="predict-match-id">
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" id="predict-user-name" required placeholder="Enter your display name">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label id="predict-team1-label">Team 1 Score</label>
+                        <input type="number" id="predict-score1" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label id="predict-team2-label">Team 2 Score</label>
+                        <input type="number" id="predict-score2" required min="0">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 1rem;">SUBMIT PREDICTION</button>
+            </form>
         </div>
     </div>
 
