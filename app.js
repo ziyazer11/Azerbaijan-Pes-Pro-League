@@ -429,10 +429,13 @@ async function recalculateAndSyncStandings() {
         played: 0, wins: 0, draws: 0, losses: 0, gf: 0, ga: 0, gd: 0, pts: 0
     }));
 
-    // Fetch latest matches to be sure
+    // Fetch latest matches to be sure and UPDATE global matches array
     const { data: currentMatches } = await supabaseClient.from('matches').select('*');
+    if (currentMatches) {
+        matches = currentMatches; // Fix: Ensure global state has the new highlightsUrl
+    }
 
-    currentMatches.filter(m => m.played).forEach(m => {
+    matches.filter(m => m.played).forEach(m => {
         const t1 = updatedTeams.find(t => t.name === m.team1);
         const t2 = updatedTeams.find(t => t.name === m.team2);
 
@@ -780,3 +783,95 @@ function openModal(id) {
 function closeModal(id) {
     document.getElementById(id).style.display = 'none';
 }
+
+// --- Drag and Drop File Upload ---
+function initDragAndDrop() {
+    const dropZone = document.getElementById('highlights-drop-zone');
+    const fileInput = document.getElementById('highlights-file-input');
+
+    if (!dropZone || !fileInput) return;
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+    });
+
+    dropZone.addEventListener('drop', handleDrop, false);
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files), false);
+}
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+}
+
+async function handleFiles(files) {
+    if (files.length === 0) return;
+    const file = files[0];
+
+    if (!file.type.startsWith('video/')) {
+        alert("Please upload a video file.");
+        return;
+    }
+
+    if (!supabaseClient) {
+        alert("Database not connected. Cannot upload.");
+        return;
+    }
+
+    const dropZone = document.getElementById('highlights-drop-zone');
+    const statusDiv = document.getElementById('upload-status');
+    const urlInput = document.getElementById('result-highlights');
+
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = 'Uploading: <span id="upload-percent">Please wait...</span>';
+    dropZone.style.pointerEvents = 'none';
+
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `public/${fileName}`;
+
+        const { data, error } = await supabaseClient.storage
+            .from('highlights')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        const { data: publicUrlData } = supabaseClient.storage
+            .from('highlights')
+            .getPublicUrl(filePath);
+
+        urlInput.value = publicUrlData.publicUrl;
+
+        dropZone.classList.add('success');
+        statusDiv.innerHTML = '<span style="color: var(--primary)">Upload Complete! URL saved to input.</span>';
+
+    } catch (err) {
+        console.error("Upload error:", err);
+        alert("Error uploading file: " + err.message);
+        statusDiv.style.display = 'none';
+    } finally {
+        dropZone.style.pointerEvents = 'auto';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initDragAndDrop);
