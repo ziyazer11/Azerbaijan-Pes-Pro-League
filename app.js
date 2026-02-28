@@ -516,13 +516,13 @@ function renderStandings() {
 
         if (rank <= zoneNext) {
             zoneClass = 'zone-next';
-            label = '<span class="zone-label label-next">THROUGH</span>';
+            label = `<span class="zone-label label-next">${t('zone_through')}</span>`;
         } else if (rank <= (zoneNext + zonePlayoff)) {
             zoneClass = 'zone-playoff';
-            label = '<span class="zone-label label-playoff">PLAYOFFS</span>';
+            label = `<span class="zone-label label-playoff">${t('zone_playoffs')}</span>`;
         } else if (rank > (totalTeams - zoneOut)) {
             zoneClass = 'zone-out';
-            label = '<span class="zone-label label-out">ELIMINATED</span>';
+            label = `<span class="zone-label label-out">${t('zone_eliminated')}</span>`;
         }
 
         const row = document.createElement('tr');
@@ -971,7 +971,10 @@ const i18n = {
         "alert_upload_type": "Please upload a video file.",
         "uploading": "Uploading",
         "please_wait": "Please wait...",
-        "upload_complete": "Upload Complete! URL saved to input."
+        "upload_complete": "Upload Complete! URL saved to input.",
+        "zone_through": "THROUGH",
+        "zone_playoffs": "PLAYOFFS",
+        "zone_eliminated": "ELIMINATED"
     },
     "az": {
         "scheduled": "PLANLAŞDIRILIB",
@@ -1063,7 +1066,10 @@ const i18n = {
         "alert_upload_type": "Zəhmət olmasa video fayl yükləyin.",
         "uploading": "Yüklənir",
         "please_wait": "Zəhmət olmasa gözləyin...",
-        "upload_complete": "Yüklənmə Tamamlandı! Link yadda saxlanıldı."
+        "upload_complete": "Yüklənmə Tamamlandı! Link yadda saxlanıldı.",
+        "zone_through": "NÖVBƏTİ",
+        "zone_playoffs": "PLEY-OFF",
+        "zone_eliminated": "MƏĞLUB"
     }
 };
 
