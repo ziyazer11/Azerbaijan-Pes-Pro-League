@@ -241,6 +241,38 @@ header {
     box-shadow: 0 0 15px var(--primary);
 }
 
+/* Language Switcher */
+.lang-switcher {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 50px;
+    padding: 0.2rem 0.5rem;
+}
+
+.lang-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0.3rem 0.6rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.lang-btn:hover {
+    color: white;
+}
+
+.lang-btn.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 10px var(--accent);
+}
+
 /* Header Enhancements */
 .countdown-container {
     background: rgba(255, 255, 255, 0.05);

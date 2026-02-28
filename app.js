@@ -36,6 +36,7 @@ const adminDashboard = document.getElementById('admin-dashboard');
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
+    translatePage(); // Translate static elements first
     await loadInitialData();
     updateUIForAuth();
 });
@@ -570,8 +571,8 @@ function renderSchedule() {
         card.innerHTML = `
             <div class="match-info">
                 <strong>${dateStr}</strong><br>
-                <span style="color:var(--text-dim)">SCHEDULED</span><br>
-                <button class="btn-predict" onclick="openPredictionModal(${m.id})">PREDICT</button>
+                <span style="color:var(--text-dim)">${t('scheduled')}</span><br>
+                <button class="btn-predict" onclick="openPredictionModal(${m.id})">${t('predict')}</button>
             </div>
             <div class="match-teams">
                 <span>${m.team1}</span>
@@ -580,8 +581,8 @@ function renderSchedule() {
             </div>
             ${isAdmin ? `
                 <div class="admin-controls">
-                    <button class="btn-sm btn-success" onclick="recordResult(${m.id})">RESULT</button>
-                    <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">DEL</button>
+                    <button class="btn-sm btn-success" onclick="recordResult(${m.id})">${t('edit_score')}</button>
+                    <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">${t('del')}</button>
                 </div>
             ` : ''}
         `;
@@ -593,7 +594,7 @@ function renderSchedule() {
     const sortedPlayed = playedMatches.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)); // Newest first
 
     if (sortedPlayed.length === 0) {
-        resultsList.innerHTML = '<p style="color:var(--text-dim); text-align:center; padding:1rem;">No results recorded yet.</p>';
+        resultsList.innerHTML = `<p style="color:var(--text-dim); text-align:center; padding:1rem;">${t('no_results')}</p>`;
     } else {
         sortedPlayed.slice(0, 5).forEach(m => { // Show last 5 results on home page
             const card = document.createElement('div');
@@ -604,10 +605,10 @@ function renderSchedule() {
             card.innerHTML = `
                 <div class="match-info">
                     <strong>${dateStr}</strong><br>
-                    <span style="color:var(--primary)">COMPLETED</span><br>
+                    <span style="color:var(--primary)">${t('completed')}</span><br>
                     ${m.highlightsUrl ?
-                    `<a href="${m.highlightsUrl}" target="_blank" class="btn-watch"><i data-lucide="play-circle"></i> WATCH HIGHLIGHTS</a>` :
-                    `<span style="color:var(--text-dim); font-size: 0.75rem;">No highlights yet</span>`
+                    `<a href="${m.highlightsUrl}" target="_blank" class="btn-watch"><i data-lucide="play-circle"></i> ${t('watch_highlights')}</a>` :
+                    `<span style="color:var(--text-dim); font-size: 0.75rem;">${t('no_highlights')}</span>`
                 }
                 </div>
                 <div class="match-teams">
@@ -617,8 +618,8 @@ function renderSchedule() {
                 </div>
                 ${isAdmin ? `
                     <div class="admin-controls">
-                        <button class="btn-sm btn-success" onclick="recordResult(${m.id})">EDIT HIGHLIGHTS</button>
-                        <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">DEL</button>
+                        <button class="btn-sm btn-success" onclick="recordResult(${m.id})">${t('edit_highlights')}</button>
+                        <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">${t('del')}</button>
                     </div>
                 ` : ''}
             `;
@@ -671,7 +672,7 @@ function renderMatchHistory() {
     const sortedMatches = playedMatches.sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime)); // Newest first
 
     if (sortedMatches.length === 0) {
-        historyContainer.innerHTML = '<p style="color:var(--text-dim); text-align:center; padding:1rem;">No completed matches yet.</p>';
+        historyContainer.innerHTML = `<p style="color:var(--text-dim); text-align:center; padding:1rem;">${t('no_completed')}</p>`;
         return;
     }
 
@@ -685,8 +686,8 @@ function renderMatchHistory() {
         card.innerHTML = `
             <div class="match-info">
                 <strong>${dateStr}</strong><br>
-                <span style="color:var(--primary)">COMPLETED</span><br>
-                ${m.highlightsUrl ? `<a href="${m.highlightsUrl}" target="_blank" class="btn-watch"><i data-lucide="play-circle"></i> WATCH</a>` : ''}
+                <span style="color:var(--primary)">${t('completed')}</span><br>
+                ${m.highlightsUrl ? `<a href="${m.highlightsUrl}" target="_blank" class="btn-watch"><i data-lucide="play-circle"></i> ${t('watch')}</a>` : ''}
             </div>
             <div class="match-teams">
                 <span>${m.team1}</span>
@@ -695,8 +696,8 @@ function renderMatchHistory() {
             </div>
             ${isAdmin ? `
             <div class="admin-controls">
-                <button class="btn-sm btn-success" onclick="recordResult(${m.id})">EDIT SCORE</button>
-                <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">DEL</button>
+                <button class="btn-sm btn-success" onclick="recordResult(${m.id})">${t('edit_score')}</button>
+                <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">${t('del')}</button>
             </div>
             ` : ''}
         `;
@@ -875,3 +876,137 @@ async function handleFiles(files) {
 }
 
 document.addEventListener('DOMContentLoaded', initDragAndDrop);
+
+// --- i18n Translation Dictionary ---
+let currentLang = localStorage.getItem('pesLeagueLang') || 'en';
+
+const i18n = {
+    "en": {
+        "scheduled": "SCHEDULED",
+        "completed": "COMPLETED",
+        "watch_highlights": "WATCH HIGHLIGHTS",
+        "watch": "WATCH",
+        "predict": "PREDICT",
+        "edit_score": "RESULT",
+        "edit_highlights": "EDIT HIGHLIGHTS",
+        "del": "DEL",
+        "no_results": "No results recorded yet.",
+        "no_completed": "No completed matches yet.",
+        "no_highlights": "No highlights yet",
+        "next_match": "NEXT MATCH IN",
+        "leaderboard": "LEADERBOARD",
+        "history": "HISTORY",
+        "admin_login": "ADMIN LOGIN",
+        "logout": "LOGOUT",
+        "premier_league": "PREMIER LEAGUE",
+        "hero_desc": "The elite competition for PES players around the world. Register now and prove your skills on the pitch.",
+        "league_standings": "LEAGUE STANDINGS",
+        "latest_results": "LATEST RESULTS",
+        "match_schedule": "MATCH SCHEDULE",
+        "team": "TEAM",
+        "form": "FORM",
+        "pts": "PTS",
+        "secure_access": "SECURE ACCESS",
+        "email_address": "Email Address",
+        "password": "Password",
+        "authenticate": "AUTHENTICATE",
+        "record_result": "RECORD RESULT",
+        "upload_highlights_url": "UPLOAD HIGHLIGHTS URL (YouTube/Twitch/etc)",
+        "or_upload_video": "OR UPLOAD VIDEO HIGHLIGHTS",
+        "drag_drop": "Drag & Drop MP4 file or click to browse",
+        "save_result": "SAVE RESULT",
+        "match_history": "MATCH HISTORY",
+        "prediction_leaderboard": "PREDICTION LEADERBOARD",
+        "rank": "RANK",
+        "user": "USER",
+        "points": "POINTS",
+        "predict_score": "PREDICT SCORE",
+        "your_name": "Your Name",
+        "submit_prediction": "SUBMIT PREDICTION",
+        "join_competition": "JOIN THE COMPETITION",
+        "email_us": "EMAIL US",
+        "call_us": "CALL US",
+        "click_to_join": "CLICK HERE TO JOIN COMPETITION"
+    },
+    "az": {
+        "scheduled": "PLANLAŞDIRILIB",
+        "completed": "TAMAMLANIB",
+        "watch_highlights": "İCMAL QİSMİNƏ BAX",
+        "watch": "BAX",
+        "predict": "TƏXMİN ET",
+        "edit_score": "NƏTİCƏ",
+        "edit_highlights": "İCMALI YENİLƏ",
+        "del": "SİL",
+        "no_results": "Hələ nəticə yoxdur.",
+        "no_completed": "Hələ tamamlanmış oyun yoxdur.",
+        "no_highlights": "Hələ icmal yoxdur",
+        "next_match": "NÖVBƏTİ OYUN",
+        "leaderboard": "LİDERLƏR CƏDVƏLİ",
+        "history": "TARİXÇƏ",
+        "admin_login": "ADMİN GİRİŞİ",
+        "logout": "ÇIXIŞ",
+        "premier_league": "PREMYER LİQA",
+        "hero_desc": "Bütün dünyadakı PES oyunçuları üçün elit yarışma. İndi qeydiyyatdan keçin və meydanda bacarıqlarınızı sübut edin.",
+        "league_standings": "LİQA CƏDVƏLİ",
+        "latest_results": "SON NƏTİCƏLƏR",
+        "match_schedule": "OYUN TƏQVİMİ",
+        "team": "KOMANDA",
+        "form": "FORMA",
+        "pts": "XAL",
+        "secure_access": "TƏHLÜKƏSİZ GİRİŞ",
+        "email_address": "E-poçt Ünvanı",
+        "password": "Şifrə",
+        "authenticate": "TƏSDİQLƏ",
+        "record_result": "NƏTİCƏNİ QEYD ET",
+        "upload_highlights_url": "İCMALIN LİNKİNİ YÜKLƏ (YouTube/Twitch/və s)",
+        "or_upload_video": "YAXUD VİDEO İCMALI YÜKLƏ",
+        "drag_drop": "MP4 faylını bura at və ya seçmək üçün tıkla",
+        "save_result": "NƏTİCƏNİ YADDA SAXLA",
+        "match_history": "OYUN TARİXÇƏSİ",
+        "prediction_leaderboard": "TƏXMİN LİDERLƏR CƏDVƏLİ",
+        "rank": "SIYAHI",
+        "user": "İSTİFADƏÇİ",
+        "points": "XAL",
+        "predict_score": "HESABI TƏXMİN ET",
+        "your_name": "Adınız",
+        "submit_prediction": "TƏXMİNİ GÖNDƏR",
+        "join_competition": "YARIŞMAYA QOŞULUN",
+        "email_us": "BİZƏ YAZIN",
+        "call_us": "BİZƏ ZƏNG EDİN",
+        "click_to_join": "YARIŞMAYA QOŞULMAQ ÜÇÜN BURAYA TIKLAYIN"
+    }
+};
+
+function t(key) {
+    return i18n[currentLang][key] || key;
+}
+
+function setLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('pesLeagueLang', lang);
+    translatePage();
+}
+
+function translatePage() {
+    // Translate static HTML tags
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[currentLang][key]) {
+            el.textContent = i18n[currentLang][key];
+        }
+    });
+
+    // Re-render dynamic elements to apply new language
+    renderStandings();
+    renderSchedule();
+    renderMatchHistory();
+
+    // Toggle active state on language buttons
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        if (btn.textContent.trim().toLowerCase() === currentLang) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}

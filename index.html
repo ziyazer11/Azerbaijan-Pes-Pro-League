@@ -15,7 +15,7 @@
 <body>
     <div id="news-ticker-bar" class="news-ticker-bar">
         <div class="ticker-wrapper">
-            <div id="ticker-content" class="ticker-content">Loading latest news...</div>
+            <div id="ticker-content" class="ticker-content" data-i18n="loading_news">Loading latest news...</div>
         </div>
     </div>
     <div class="bg-gradient"></div>
@@ -25,7 +25,7 @@
 
         <div class="header-center">
             <div id="next-match-countdown" class="countdown-container" style="display: none;">
-                <span class="countdown-label">NEXT MATCH IN</span>
+                <span class="countdown-label" data-i18n="next_match">NEXT MATCH IN</span>
                 <div class="countdown-timer">
                     <span id="days">00</span><small>d</small>
                     <span id="hours">00</span><small>h</small>
@@ -36,6 +36,11 @@
         </div>
 
         <div class="header-right">
+            <div class="lang-switcher" style="display: flex; gap: 0.5rem; margin-right: 1rem; align-items: center;">
+                <button class="lang-btn active" onclick="setLanguage('en')">EN</button>
+                <span style="color: var(--text-dim);">|</span>
+                <button class="lang-btn" onclick="setLanguage('az')">AZ</button>
+            </div>
             <div class="social-links">
                 <a href="https://www.instagram.com/azerbaijanpesproleague" target="_blank" class="social-icon"
                     title="Instagram"><i data-lucide="instagram"></i></a>
@@ -47,34 +52,35 @@
                     </svg>
                 </a>
             </div>
-            <button class="btn-leaderboard" onclick="openModal('leaderboard-modal')">LEADERBOARD</button>
-            <button class="btn-history" onclick="openModal('match-history-modal')">HISTORY</button>
-            <button id="login-trigger-btn" class="btn-admin">ADMIN LOGIN</button>
+            <button class="btn-leaderboard" onclick="openModal('leaderboard-modal')"
+                data-i18n="leaderboard">LEADERBOARD</button>
+            <button class="btn-history" onclick="openModal('match-history-modal')" data-i18n="history">HISTORY</button>
+            <button id="login-trigger-btn" class="btn-admin" data-i18n="admin_login">ADMIN LOGIN</button>
         </div>
     </header>
 
     <main>
         <section class="hero">
-            <h1>PREMIER LEAGUE</h1>
-            <p>The elite competition for PES players around the world. Register now and prove your skills on the pitch.
-            </p>
+            <h1 data-i18n="premier_league">PREMIER LEAGUE</h1>
+            <p data-i18n="hero_desc">The elite competition for PES players around the world. Register now and prove your
+                skills on the pitch.</p>
         </section>
 
         <section id="standings">
-            <h2 class="section-title">LEAGUE STANDINGS</h2>
+            <h2 class="section-title" data-i18n="league_standings">LEAGUE STANDINGS</h2>
             <div class="glass-card standings-container">
                 <table>
                     <thead>
                         <tr>
                             <th class="rank">#</th>
-                            <th>TEAM</th>
+                            <th data-i18n="team">TEAM</th>
                             <th>P</th>
                             <th>W</th>
                             <th>D</th>
                             <th>L</th>
                             <th>GD</th>
-                            <th>FORM</th>
-                            <th class="pts">PTS</th>
+                            <th data-i18n="form">FORM</th>
+                            <th class="pts" data-i18n="pts">PTS</th>
                         </tr>
                     </thead>
                     <tbody id="standings-body">
@@ -85,14 +91,14 @@
         </section>
 
         <section id="results">
-            <h2 class="section-title" style="color: var(--secondary);">LATEST RESULTS</h2>
+            <h2 class="section-title" style="color: var(--secondary);" data-i18n="latest_results">LATEST RESULTS</h2>
             <div id="results-list" class="schedule-list" style="margin-bottom: 4rem;">
                 <!-- JS Render -->
             </div>
         </section>
 
         <section id="schedule">
-            <h2 class="section-title">MATCH SCHEDULE</h2>
+            <h2 class="section-title" data-i18n="match_schedule">MATCH SCHEDULE</h2>
             <div id="schedule-list" class="schedule-list">
                 <!-- JS Render -->
             </div>
@@ -100,20 +106,20 @@
 
 
         <section id="join-section">
-            <h2 class="section-title">JOIN THE COMPETITION</h2>
+            <h2 class="section-title" data-i18n="join_competition">JOIN THE COMPETITION</h2>
             <div class="glass-card contact-card">
                 <div class="contact-details">
                     <div class="contact-item">
-                        <span class="label">EMAIL US</span>
+                        <span class="label" data-i18n="email_us">EMAIL US</span>
                         <a href="mailto:azerbaijanpespremierleague@gmail.com">azerbaijanpespremierleague@gmail.com</a>
                     </div>
                     <div class="contact-item">
-                        <span class="label">CALL US</span>
+                        <span class="label" data-i18n="call_us">CALL US</span>
                         <a href="tel:+9940507354196">+994 050 735 41 96</a>
                     </div>
                 </div>
                 <a href="https://docs.google.com/forms/d/1klTqNIK1AGQmH05GfXd6VQIFCREdYfX7Fvj9pADJZb0/edit"
-                    target="_blank" class="btn-join-large">CLICK HERE TO JOIN COMPETITION</a>
+                    target="_blank" class="btn-join-large" data-i18n="click_to_join">CLICK HERE TO JOIN COMPETITION</a>
             </div>
         </section>
 
@@ -185,17 +191,18 @@
     <div id="admin-login-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('admin-login-modal')">&times;</span>
-            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--primary);">SECURE ACCESS</h2>
+            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--primary);"
+                data-i18n="secure_access">SECURE ACCESS</h2>
             <form onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label>Email Address</label>
+                    <label data-i18n="email_address">Email Address</label>
                     <input type="email" id="login-email" required>
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
+                    <label data-i18n="password">Password</label>
                     <input type="password" id="login-pass" required>
                 </div>
-                <button type="submit" class="btn-primary">AUTHENTICATE</button>
+                <button type="submit" class="btn-primary" data-i18n="authenticate">AUTHENTICATE</button>
             </form>
         </div>
     </div>
@@ -203,7 +210,8 @@
     <div id="result-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('result-modal')">&times;</span>
-            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--primary);">RECORD RESULT</h2>
+            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--primary);"
+                data-i18n="record_result">RECORD RESULT</h2>
             <form id="result-form" onsubmit="saveMatchResult(event)">
                 <input type="hidden" id="result-match-id">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -217,16 +225,16 @@
                     </div>
                 </div>
                 <div class="form-group" style="margin-top: 1rem;">
-                    <label>UPLOAD HIGHLIGHTS URL (YouTube/Twitch/etc)</label>
+                    <label data-i18n="upload_highlights_url">UPLOAD HIGHLIGHTS URL (YouTube/Twitch/etc)</label>
                     <input type="url" id="result-highlights" placeholder="https://youtube.com/...">
                 </div>
 
                 <div class="form-group" style="margin-top: 1.5rem;">
-                    <label>OR UPLOAD VIDEO HIGHLIGHTS</label>
+                    <label data-i18n="or_upload_video">OR UPLOAD VIDEO HIGHLIGHTS</label>
                     <div id="highlights-drop-zone" class="drop-zone"
                         onclick="document.getElementById('highlights-file-input').click()">
                         <i data-lucide="upload-cloud"></i>
-                        <span>Drag & Drop MP4 file or click to browse</span>
+                        <span data-i18n="drag_drop">Drag & Drop MP4 file or click to browse</span>
                         <input type="file" id="highlights-file-input" accept="video/*" style="display: none;">
                     </div>
                     <div id="upload-status"
@@ -234,7 +242,8 @@
                         Uploading: <span id="upload-percent">0</span>%
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" style="margin-top: 1rem;">SAVE RESULT</button>
+                <button type="submit" class="btn-primary" style="margin-top: 1rem;" data-i18n="save_result">SAVE
+                    RESULT</button>
             </form>
         </div>
     </div>
@@ -243,7 +252,8 @@
     <div id="match-history-modal" class="modal">
         <div class="modal-content history-modal">
             <span class="close-modal" onclick="closeModal('match-history-modal')">&times;</span>
-            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--secondary);">MATCH HISTORY
+            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--secondary);"
+                data-i18n="match_history">MATCH HISTORY
             </h2>
             <div id="admin-match-history" class="schedule-list history-scroll">
                 <!-- JS Render -->
@@ -255,15 +265,16 @@
     <div id="leaderboard-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('leaderboard-modal')">&times;</span>
-            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--accent);">PREDICTION
+            <h2 style="font-family: var(--font-heading); margin-bottom: 2rem; color: var(--accent);"
+                data-i18n="prediction_leaderboard">PREDICTION
                 LEADERBOARD</h2>
             <div id="leaderboard-content">
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
-                            <th>RANK</th>
-                            <th>USER</th>
-                            <th>POINTS</th>
+                            <th data-i18n="rank">RANK</th>
+                            <th data-i18n="user">USER</th>
+                            <th data-i18n="points">POINTS</th>
                         </tr>
                     </thead>
                     <tbody id="leaderboard-body">
@@ -278,12 +289,12 @@
     <div id="prediction-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('prediction-modal')">&times;</span>
-            <h2 id="predict-title"
-                style="font-family: var(--font-heading); margin-bottom: 1rem; color: var(--az-blue);">PREDICT SCORE</h2>
+            <h2 id="predict-title" style="font-family: var(--font-heading); margin-bottom: 1rem; color: var(--az-blue);"
+                data-i18n="predict_score">PREDICT SCORE</h2>
             <form id="prediction-form" onsubmit="submitPrediction(event)">
                 <input type="hidden" id="predict-match-id">
                 <div class="form-group">
-                    <label>Your Name</label>
+                    <label data-i18n="your_name">Your Name</label>
                     <input type="text" id="predict-user-name" required placeholder="Enter your display name">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
@@ -296,7 +307,8 @@
                         <input type="number" id="predict-score2" required min="0">
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" style="margin-top: 1rem;">SUBMIT PREDICTION</button>
+                <button type="submit" class="btn-primary" style="margin-top: 1rem;" data-i18n="submit_prediction">SUBMIT
+                    PREDICTION</button>
             </form>
         </div>
     </div>
