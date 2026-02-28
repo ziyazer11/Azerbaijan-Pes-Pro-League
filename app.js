@@ -341,6 +341,7 @@ async function recalculateAndSyncStandings() {
 
 // --- Rendering ---
 function renderStandings() {
+    if (!standingsBody) return;
     standingsBody.innerHTML = '';
 
     const zoneNext = zones.next;
@@ -389,6 +390,7 @@ function renderStandings() {
 }
 
 function renderSchedule() {
+    if (!scheduleList) return;
     scheduleList.innerHTML = '';
 
     const sortedMatches = [...matches].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
