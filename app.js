@@ -77,10 +77,58 @@ async function loadInitialData() {
         renderStandings();
         renderSchedule();
         populateSelects();
+        startCountdownTimer();
 
     } catch (err) {
         console.error('Error loading data:', err.message);
     }
+}
+
+// --- Countdown Logic ---
+let countdownInterval = null;
+
+function startCountdownTimer() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
+}
+
+function updateCountdown() {
+    const nextMatch = matches
+        .filter(m => !m.played && new Date(m.dateTime) > new Date())
+        .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))[0];
+
+    const container = document.getElementById('next-match-countdown');
+    if (!nextMatch) {
+        if (container) container.style.display = 'none';
+        return;
+    }
+
+    if (container) container.style.display = 'flex';
+
+    const now = new Date().getTime();
+    const matchTime = new Date(nextMatch.dateTime).getTime();
+    const diff = matchTime - now;
+
+    if (diff <= 0) {
+        if (container) container.style.display = 'none';
+        return;
+    }
+
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+    const dEl = document.getElementById('days');
+    const hEl = document.getElementById('hours');
+    const mEl = document.getElementById('minutes');
+    const sEl = document.getElementById('seconds');
+
+    if (dEl) dEl.textContent = d.toString().padStart(2, '0');
+    if (hEl) hEl.textContent = h.toString().padStart(2, '0');
+    if (mEl) mEl.textContent = m.toString().padStart(2, '0');
+    if (sEl) sEl.textContent = s.toString().padStart(2, '0');
 }
 
 // --- Authentication ---

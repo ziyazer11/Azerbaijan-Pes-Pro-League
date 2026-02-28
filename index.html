@@ -9,6 +9,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@600;800&display=swap"
         rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
@@ -16,7 +17,28 @@
 
     <header>
         <div class="logo">Azerbaijan Pes Pro League</div>
-        <button id="login-trigger-btn" class="btn-admin">ADMIN LOGIN</button>
+
+        <div class="header-center">
+            <div id="next-match-countdown" class="countdown-container" style="display: none;">
+                <span class="countdown-label">NEXT MATCH IN</span>
+                <div class="countdown-timer">
+                    <span id="days">00</span><small>d</small>
+                    <span id="hours">00</span><small>h</small>
+                    <span id="minutes">00</span><small>m</small>
+                    <span id="seconds">00</span><small>s</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="social-links">
+                <a href="https://www.instagram.com/azerbaijanpesproleague" target="_blank" class="social-icon"
+                    title="Instagram"><i data-lucide="instagram"></i></a>
+                <a href="https://discord.com/channels/1477294808623218718/1477295957866713309" target="_blank"
+                    class="social-icon" title="Discord"><i data-lucide="message-square"></i></a>
+            </div>
+            <button id="login-trigger-btn" class="btn-admin">ADMIN LOGIN</button>
+        </div>
     </header>
 
     <main>
@@ -153,6 +175,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 
 </html>
