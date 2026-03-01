@@ -723,7 +723,7 @@ function renderSchedule() {
         const dateStr = new Intl.DateTimeFormat(undefined, {
             dateStyle: 'medium',
             timeStyle: 'short',
-            timeZone: globalTimezone
+            timeZone: userTimezone
         }).format(dateObj);
 
         const liveBadgeHTML = m.is_live ? `<div class="live-badge">🔴 LIVE</div>` : `<strong>${dateStr}</strong>`;
@@ -773,7 +773,7 @@ function renderSchedule() {
             const dateStr = new Intl.DateTimeFormat(undefined, {
                 dateStyle: 'medium',
                 timeStyle: 'short',
-                timeZone: globalTimezone
+                timeZone: userTimezone
             }).format(dateObj);
 
             card.innerHTML = `
@@ -860,7 +860,7 @@ function renderMatchHistory() {
         const dateStr = new Intl.DateTimeFormat(undefined, {
             dateStyle: 'medium',
             timeStyle: 'short',
-            timeZone: globalTimezone
+            timeZone: userTimezone
         }).format(dateObj);
 
         card.innerHTML = `
