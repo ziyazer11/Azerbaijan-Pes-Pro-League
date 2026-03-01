@@ -530,6 +530,9 @@ async function saveMatchResult(e) {
         return;
     }
 
+    // --- Auto-Delete Trash Talk for this Match ---
+    await supabaseClient.from('trash_talk').delete().eq('match_id', matchId);
+
     // --- Automated Prediction Scoring ---
     const matchPredictions = predictionsGroup.filter(p => p.matchId === matchId);
     for (const pred of matchPredictions) {
@@ -1111,6 +1114,7 @@ async function submitTrashTalk(e) {
     const matchId = document.getElementById('trash-talk-match-id').value;
     const author = document.getElementById('trash-talk-author').value;
     const message = document.getElementById('trash-talk-message').value;
+    const parentId = document.getElementById('trash-talk-reply-id').value;
 
     const postData = {
         author: author,
@@ -1118,20 +1122,80 @@ async function submitTrashTalk(e) {
         votes: 0
     };
     if (matchId) postData.match_id = parseInt(matchId);
+    if (parentId) postData.parent_id = parseInt(parentId);
 
-    const { error } = await supabaseClient.from('trash_talk').insert([postData]);
+    const { data, error } = await supabaseClient.from('trash_talk').insert([postData]).select();
 
     if (error) {
         alert(t('alert_error_generic') + error.message);
         return;
     }
 
+    if (data && data.length > 0) {
+        // Save post ID to local storage so user can edit/delete it later
+        const myPosts = JSON.parse(localStorage.getItem('pesLeagueMyPosts') || '[]');
+        myPosts.push(data[0].id);
+        localStorage.setItem('pesLeagueMyPosts', JSON.stringify(myPosts));
+    }
+
     closeModal('trash-talk-modal');
     e.target.reset();
+    document.getElementById('trash-talk-reply-id').value = '';
+
+    // reset title
+    const modalTitle = document.getElementById('trash-talk-modal-title');
+    if (modalTitle) modalTitle.textContent = t('post_trash_talk');
+
     await loadInitialData(); // Re-fetch and re-render
 }
 
-async function voteTrashTalk(id) {
+async function editTrashTalk(id) {
+    const post = trashTalkPosts.find(p => p.id === id);
+    if (!post) return;
+
+    const newMessage = prompt("Edit your message:", post.message);
+    if (newMessage === null || newMessage.trim() === '') return;
+
+    const { error } = await supabaseClient
+        .from('trash_talk')
+        .update({ message: newMessage.trim() })
+        .eq('id', id);
+
+    if (error) {
+        alert(t('alert_error_generic') + error.message);
+        return;
+    }
+
+    await loadInitialData();
+}
+
+async function deleteTrashTalk(id) {
+    if (!confirm("Are you sure you want to delete this post?")) return;
+
+    const { error } = await supabaseClient
+        .from('trash_talk')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        alert(t('alert_error_generic') + error.message);
+        return;
+    }
+
+    // Since we delete parent, ideally supabase CASCADE deletes children but we do our best here
+    await loadInitialData();
+}
+
+function openReplyModal(parentId, author) {
+    document.getElementById('trash-talk-reply-id').value = parentId;
+
+    const modalTitle = document.getElementById('trash-talk-modal-title');
+    if (modalTitle) modalTitle.textContent = `REPLY TO ${author.toUpperCase()}`;
+
+    openModal('trash-talk-modal');
+}
+
+async function voteTrashTalk(id, voteType = 'up') {
     if (!supabaseClient) return;
 
     // Prevent multiple votes from same browser
@@ -1143,9 +1207,11 @@ async function voteTrashTalk(id) {
     const post = trashTalkPosts.find(p => p.id === id);
     if (!post) return;
 
+    const newVotes = voteType === 'up' ? post.votes + 1 : post.votes - 1;
+
     const { error } = await supabaseClient
         .from('trash_talk')
-        .update({ votes: post.votes + 1 })
+        .update({ votes: newVotes })
         .eq('id', id);
 
     if (error) {
@@ -1155,7 +1221,7 @@ async function voteTrashTalk(id) {
 
     votedPosts.push(id);
     localStorage.setItem('pesLeagueVotedPosts', JSON.stringify(votedPosts));
-    post.votes += 1; // Optimistic update
+    post.votes = newVotes; // Optimistic update
 
     // Re-sort and render
     trashTalkPosts.sort((a, b) => {
@@ -1177,9 +1243,19 @@ function renderTrashTalk() {
     }
 
     const votedPosts = JSON.parse(localStorage.getItem('pesLeagueVotedPosts') || '[]');
+    const myPosts = JSON.parse(localStorage.getItem('pesLeagueMyPosts') || '[]');
 
-    // Render top 6 posts
-    trashTalkPosts.slice(0, 6).forEach(post => {
+    // Organize into top-level and replies
+    const topLevelPosts = trashTalkPosts.filter(p => !p.parent_id);
+
+    // Sort top level by votes then date
+    topLevelPosts.sort((a, b) => {
+        if (b.votes !== a.votes) return b.votes - a.votes;
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    // Render top 10 parent posts
+    topLevelPosts.slice(0, 10).forEach(post => {
         const card = document.createElement('div');
         card.className = `glass-card trash-talk-card ${post.votes > 10 ? 'on-fire' : ''}`;
 
@@ -1190,6 +1266,7 @@ function renderTrashTalk() {
         }
 
         const hasVoted = votedPosts.includes(post.id);
+        const isMyPost = myPosts.includes(post.id) || isAdmin;
 
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 0.5rem;">
@@ -1197,18 +1274,78 @@ function renderTrashTalk() {
                     <strong style="color:var(--secondary); font-size: 1.1rem;">${post.author}</strong>
                     <div style="font-size: 0.75rem; color:var(--text-dim);">${matchContext}</div>
                 </div>
-                <button 
-                    class="btn-vote ${hasVoted ? 'voted' : ''}" 
-                    onclick="voteTrashTalk(${post.id})" 
-                    ${hasVoted ? 'disabled' : ''}
-                    title="${hasVoted ? 'Already voted' : 'Upvote'}"
-                >
-                    <i data-lucide="thumbs-up"></i> ${post.votes}
-                </button>
+                <div style="display: flex; gap: 0.5rem; flex-direction: column; align-items: flex-end;">
+                    <div style="display:flex; gap: 0.25rem;">
+                        <button 
+                            class="btn-vote ${hasVoted ? 'voted' : ''}" 
+                            onclick="voteTrashTalk(${post.id}, 'up')" 
+                            ${hasVoted ? 'disabled' : ''}
+                            title="${hasVoted ? 'Already voted' : 'Upvote'}"
+                        >
+                            <i data-lucide="thumbs-up"></i> ${post.votes}
+                        </button>
+                        <button 
+                            class="btn-vote ${hasVoted ? 'voted' : ''}" 
+                            onclick="voteTrashTalk(${post.id}, 'down')" 
+                            ${hasVoted ? 'disabled' : ''}
+                            title="${hasVoted ? 'Already voted' : 'Downvote'}"
+                            style="padding: 0.3rem;"
+                        >
+                            <i data-lucide="thumbs-down"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
             <p style="font-size: 0.95rem; margin-top: 0.5rem; word-break: break-word;">${post.message}</p>
+            <div style="display:flex; gap: 0.5rem; margin-top: 0.8rem; font-size: 0.8rem;">
+                <button onclick="openReplyModal(${post.id}, '${post.author}')" style="background:none; border:none; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; gap:0.2rem;">
+                    <i data-lucide="reply" style="width:14px; height:14px;"></i> Reply
+                </button>
+                ${isMyPost ? `
+                    ${!isAdmin ? `<button onclick="editTrashTalk(${post.id})" style="background:none; border:none; color:var(--text-dim); cursor:pointer;"><i data-lucide="edit-2" style="width:14px; height:14px;"></i> Edit</button>` : ''}
+                    <button onclick="deleteTrashTalk(${post.id})" style="background:none; border:none; color:var(--az-red); cursor:pointer;"><i data-lucide="trash-2" style="width:14px; height:14px;"></i> Delete</button>
+                ` : ''}
+            </div>
+            
+            <div class="replies-container" id="replies-${post.id}" style="margin-top: 1rem; margin-left: 1rem; border-left: 2px solid var(--glass-border); padding-left: 1rem;">
+                <!-- Replies injected here -->
+            </div>
         `;
         container.appendChild(card);
+
+        // Render replies for this parent
+        const replies = trashTalkPosts.filter(p => p.parent_id === post.id);
+        replies.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // Oldest replies first
+
+        const repliesContainer = card.querySelector(`#replies-${post.id}`);
+        replies.forEach(reply => {
+            const replyHasVoted = votedPosts.includes(reply.id);
+            const replyIsMyPost = myPosts.includes(reply.id) || isAdmin;
+
+            const replyDiv = document.createElement('div');
+            replyDiv.style.marginBottom = '0.8rem';
+            replyDiv.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:var(--secondary); font-size: 0.9rem;">${reply.author}</strong>
+                    <div style="display: flex; gap: 0.3rem;">
+                        <button class="btn-vote ${replyHasVoted ? 'voted' : ''}" style="padding:0.2rem 0.4rem; font-size:0.75rem;" onclick="voteTrashTalk(${reply.id}, 'up')" ${replyHasVoted ? 'disabled' : ''}>
+                            <i data-lucide="thumbs-up" style="width:12px; height:12px;"></i> ${reply.votes}
+                        </button>
+                        <button class="btn-vote ${replyHasVoted ? 'voted' : ''}" style="padding:0.2rem;" onclick="voteTrashTalk(${reply.id}, 'down')" ${replyHasVoted ? 'disabled' : ''}>
+                            <i data-lucide="thumbs-down" style="width:12px; height:12px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <p style="font-size: 0.85rem; margin-top: 0.2rem; margin-bottom: 0.3rem;">${reply.message}</p>
+                <div style="display:flex; gap: 0.5rem; font-size: 0.75rem;">
+                    ${replyIsMyPost ? `
+                        ${!isAdmin ? `<button onclick="editTrashTalk(${reply.id})" style="background:none; border:none; color:var(--text-dim); cursor:pointer;">Edit</button>` : ''}
+                        <button onclick="deleteTrashTalk(${reply.id})" style="background:none; border:none; color:var(--az-red); cursor:pointer;">Delete</button>
+                    ` : ''}
+                </div>
+            `;
+            repliesContainer.appendChild(replyDiv);
+        });
     });
 
     lucide.createIcons();

@@ -269,8 +269,10 @@
     <div id="trash-talk-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('trash-talk-modal')"><i data-lucide="x"></i></span>
-            <h2 data-i18n="post_trash_talk" style="color: var(--accent); margin-bottom: 1rem;">POST TRASH TALK</h2>
+            <h2 data-i18n="post_trash_talk" id="trash-talk-modal-title"
+                style="color: var(--accent); margin-bottom: 1rem;">POST TRASH TALK</h2>
             <form id="trash-talk-form" onsubmit="submitTrashTalk(event)">
+                <input type="hidden" id="trash-talk-reply-id" value="">
                 <div class="form-group">
                     <label data-i18n="select_match">Select Match</label>
                     <select id="trash-talk-match-id" required>
