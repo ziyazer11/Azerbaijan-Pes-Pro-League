@@ -1200,14 +1200,18 @@ async function voteTrashTalk(id, voteType = 'up') {
 
     // Prevent multiple votes from same browser
     const votedPosts = JSON.parse(localStorage.getItem('pesLeagueVotedPosts') || '[]');
-    if (votedPosts.includes(id)) {
+    if (votedPosts.some(v => String(v) === String(id))) {
         return; // Already voted
     }
 
-    const post = trashTalkPosts.find(p => p.id === id);
-    if (!post) return;
+    const post = trashTalkPosts.find(p => String(p.id) === String(id));
+    if (!post) {
+        console.error("Post not found for ID:", id);
+        return;
+    }
 
-    const newVotes = voteType === 'up' ? post.votes + 1 : post.votes - 1;
+    const currentVotes = parseInt(post.votes) || 0;
+    const newVotes = voteType === 'up' ? currentVotes + 1 : currentVotes - 1;
 
     const { error } = await supabaseClient
         .from('trash_talk')
@@ -1219,13 +1223,15 @@ async function voteTrashTalk(id, voteType = 'up') {
         return;
     }
 
-    votedPosts.push(id);
+    votedPosts.push(String(id));
     localStorage.setItem('pesLeagueVotedPosts', JSON.stringify(votedPosts));
     post.votes = newVotes; // Optimistic update
 
     // Re-sort and render
     trashTalkPosts.sort((a, b) => {
-        if (b.votes !== a.votes) return b.votes - a.votes;
+        const aVotes = parseInt(a.votes) || 0;
+        const bVotes = parseInt(b.votes) || 0;
+        if (bVotes !== aVotes) return bVotes - aVotes;
         return new Date(b.created_at) - new Date(a.created_at);
     });
 
@@ -1250,23 +1256,29 @@ function renderTrashTalk() {
 
     // Sort top level by votes then date
     topLevelPosts.sort((a, b) => {
-        if (b.votes !== a.votes) return b.votes - a.votes;
+        const aVotes = parseInt(a.votes) || 0;
+        const bVotes = parseInt(b.votes) || 0;
+        if (bVotes !== aVotes) return bVotes - aVotes;
         return new Date(b.created_at) - new Date(a.created_at);
     });
 
     // Render top 10 parent posts
     topLevelPosts.slice(0, 10).forEach(post => {
+        const votes = parseInt(post.votes) || 0;
         const card = document.createElement('div');
-        card.className = `glass-card trash-talk-card ${post.votes > 10 ? 'on-fire' : ''}`;
+        card.className = `glass-card trash-talk-card ${votes > 10 ? 'on-fire' : ''}`;
 
         let matchContext = 'General banter';
         if (post.match_id) {
-            const match = matches.find(m => m.id === post.match_id);
+            const match = matches.find(m => String(m.id) === String(post.match_id));
             if (match) matchContext = `RE: ${match.team1} vs ${match.team2}`;
         }
 
-        const hasVoted = votedPosts.includes(post.id);
-        const isMyPost = myPosts.includes(post.id) || isAdmin;
+        const hasVoted = votedPosts.some(v => String(v) === String(post.id));
+        const isMyPost = myPosts.some(v => String(v) === String(post.id)) || isAdmin;
+
+        // Escape single quotes in author name to prevent breaking HTML onclick attribute
+        const safeAuthor = (post.author || 'Anonymous').replace(/'/g, "\\'");
 
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 0.5rem;">
@@ -1278,15 +1290,15 @@ function renderTrashTalk() {
                     <div style="display:flex; gap: 0.25rem;">
                         <button 
                             class="btn-vote ${hasVoted ? 'voted' : ''}" 
-                            onclick="voteTrashTalk(${post.id}, 'up')" 
+                            onclick="voteTrashTalk('${post.id}', 'up')" 
                             ${hasVoted ? 'disabled' : ''}
                             title="${hasVoted ? 'Already voted' : 'Upvote'}"
                         >
-                            <i data-lucide="thumbs-up"></i> ${post.votes}
+                            <i data-lucide="thumbs-up"></i> ${votes}
                         </button>
                         <button 
                             class="btn-vote ${hasVoted ? 'voted' : ''}" 
-                            onclick="voteTrashTalk(${post.id}, 'down')" 
+                            onclick="voteTrashTalk('${post.id}', 'down')" 
                             ${hasVoted ? 'disabled' : ''}
                             title="${hasVoted ? 'Already voted' : 'Downvote'}"
                             style="padding: 0.3rem;"
@@ -1298,12 +1310,12 @@ function renderTrashTalk() {
             </div>
             <p style="font-size: 0.95rem; margin-top: 0.5rem; word-break: break-word;">${post.message}</p>
             <div style="display:flex; gap: 0.5rem; margin-top: 0.8rem; font-size: 0.8rem;">
-                <button onclick="openReplyModal(${post.id}, '${post.author}')" style="background:none; border:none; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; gap:0.2rem;">
+                <button onclick="openReplyModal('${post.id}', '${safeAuthor}')" style="background:none; border:none; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; gap:0.2rem;">
                     <i data-lucide="reply" style="width:14px; height:14px;"></i> Reply
                 </button>
                 ${isMyPost ? `
-                    ${!isAdmin ? `<button onclick="editTrashTalk(${post.id})" style="background:none; border:none; color:var(--text-dim); cursor:pointer;"><i data-lucide="edit-2" style="width:14px; height:14px;"></i> Edit</button>` : ''}
-                    <button onclick="deleteTrashTalk(${post.id})" style="background:none; border:none; color:var(--az-red); cursor:pointer;"><i data-lucide="trash-2" style="width:14px; height:14px;"></i> Delete</button>
+                    ${!isAdmin ? `<button onclick="editTrashTalk('${post.id}')" style="background:none; border:none; color:var(--text-dim); cursor:pointer;"><i data-lucide="edit-2" style="width:14px; height:14px;"></i> Edit</button>` : ''}
+                    <button onclick="deleteTrashTalk('${post.id}')" style="background:none; border:none; color:var(--az-red); cursor:pointer;"><i data-lucide="trash-2" style="width:14px; height:14px;"></i> Delete</button>
                 ` : ''}
             </div>
             
@@ -1314,13 +1326,14 @@ function renderTrashTalk() {
         container.appendChild(card);
 
         // Render replies for this parent
-        const replies = trashTalkPosts.filter(p => p.parent_id === post.id);
+        const replies = trashTalkPosts.filter(p => String(p.parent_id) === String(post.id));
         replies.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // Oldest replies first
 
         const repliesContainer = card.querySelector(`#replies-${post.id}`);
         replies.forEach(reply => {
-            const replyHasVoted = votedPosts.includes(reply.id);
-            const replyIsMyPost = myPosts.includes(reply.id) || isAdmin;
+            const replyVotes = parseInt(reply.votes) || 0;
+            const replyHasVoted = votedPosts.some(v => String(v) === String(reply.id));
+            const replyIsMyPost = myPosts.some(v => String(v) === String(reply.id)) || isAdmin;
 
             const replyDiv = document.createElement('div');
             replyDiv.style.marginBottom = '0.8rem';
@@ -1328,10 +1341,10 @@ function renderTrashTalk() {
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <strong style="color:var(--secondary); font-size: 0.9rem;">${reply.author}</strong>
                     <div style="display: flex; gap: 0.3rem;">
-                        <button class="btn-vote ${replyHasVoted ? 'voted' : ''}" style="padding:0.2rem 0.4rem; font-size:0.75rem;" onclick="voteTrashTalk(${reply.id}, 'up')" ${replyHasVoted ? 'disabled' : ''}>
-                            <i data-lucide="thumbs-up" style="width:12px; height:12px;"></i> ${reply.votes}
+                        <button class="btn-vote ${replyHasVoted ? 'voted' : ''}" style="padding:0.2rem 0.4rem; font-size:0.75rem;" onclick="voteTrashTalk('${reply.id}', 'up')" ${replyHasVoted ? 'disabled' : ''}>
+                            <i data-lucide="thumbs-up" style="width:12px; height:12px;"></i> ${replyVotes}
                         </button>
-                        <button class="btn-vote ${replyHasVoted ? 'voted' : ''}" style="padding:0.2rem;" onclick="voteTrashTalk(${reply.id}, 'down')" ${replyHasVoted ? 'disabled' : ''}>
+                        <button class="btn-vote ${replyHasVoted ? 'voted' : ''}" style="padding:0.2rem;" onclick="voteTrashTalk('${reply.id}', 'down')" ${replyHasVoted ? 'disabled' : ''}>
                             <i data-lucide="thumbs-down" style="width:12px; height:12px;"></i>
                         </button>
                     </div>
@@ -1339,8 +1352,8 @@ function renderTrashTalk() {
                 <p style="font-size: 0.85rem; margin-top: 0.2rem; margin-bottom: 0.3rem;">${reply.message}</p>
                 <div style="display:flex; gap: 0.5rem; font-size: 0.75rem;">
                     ${replyIsMyPost ? `
-                        ${!isAdmin ? `<button onclick="editTrashTalk(${reply.id})" style="background:none; border:none; color:var(--text-dim); cursor:pointer;">Edit</button>` : ''}
-                        <button onclick="deleteTrashTalk(${reply.id})" style="background:none; border:none; color:var(--az-red); cursor:pointer;">Delete</button>
+                        ${!isAdmin ? `<button onclick="editTrashTalk('${reply.id}')" style="background:none; border:none; color:var(--text-dim); cursor:pointer;">Edit</button>` : ''}
+                        <button onclick="deleteTrashTalk('${reply.id}')" style="background:none; border:none; color:var(--az-red); cursor:pointer;">Delete</button>
                     ` : ''}
                 </div>
             `;
