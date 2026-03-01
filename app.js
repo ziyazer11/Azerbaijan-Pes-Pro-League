@@ -22,7 +22,7 @@ let isAdmin = false;
 let tickerText = "Welcome to Azerbaijan Pes Pro League!";
 let predictionsGroup = []; // All raw predictions
 let leaderboard = []; // Prepared leaderboard data
-let globalTimezone = 'Asia/Baku'; // Default timezone
+let userTimezone = localStorage.getItem('pesLeagueTimezone') || 'Asia/Baku'; // Default timezone
 let trashTalkPosts = []; // All trash talk posts
 
 // Credentials
@@ -40,6 +40,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     resultsList = document.getElementById('results-list');
 
     translatePage(); // Translate static elements first
+
+    // Set initial timezone select value
+    const tzSelect = document.getElementById('user-timezone-select');
+    if (tzSelect) tzSelect.value = userTimezone;
+
     await loadInitialData();
     updateUIForAuth();
 });
@@ -82,12 +87,11 @@ async function loadInitialData() {
         if (zonesError && zonesError.code !== 'PGRST116') throw zonesError;
         if (zonesData) zones = zonesData;
 
-        // Load Settings (Ticker & Timezone) - Handle potential missing table
+        // Load Settings (Ticker) - Handle potential missing table
         try {
             const { data: settingsData, error: sErr } = await supabaseClient.from('settings').select('*').eq('id', 'global').single();
             if (settingsData && !sErr) {
                 tickerText = settingsData.newsText || tickerText;
-                globalTimezone = settingsData.global_timezone || globalTimezone;
                 updateTickerUI();
             }
         } catch (e) {
@@ -122,6 +126,7 @@ async function loadInitialData() {
         renderStandings();
         renderSchedule();
         renderMatchHistory();
+        renderKnockoutBracket();
         renderTrashTalk();
         populateSelects();
         startCountdownTimer();
@@ -165,7 +170,47 @@ async function toggleLiveMatch(matchId, isCurrentlyLive) {
     }
 
     // Toggle the target match
-    const { error } = await supabaseClient.from('matches').update({ is_live: !isCurrentlyLive }).eq('id', matchId);
+    const updateData = { is_live: !isCurrentlyLive };
+
+    // If going live, init scores to 0 if null
+    if (!isCurrentlyLive) {
+        const targetMatch = matches.find(m => m.id === matchId);
+        if (targetMatch && targetMatch.score1 === null) updateData.score1 = 0;
+        if (targetMatch && targetMatch.score2 === null) updateData.score2 = 0;
+    }
+
+    const { error } = await supabaseClient.from('matches').update(updateData).eq('id', matchId);
+    if (error) {
+        alert(t('alert_error_generic') + error.message);
+        return;
+    }
+
+    await loadInitialData();
+}
+
+async function updateLiveScore(id) {
+    if (!isAdmin || !supabaseClient) return;
+    const match = matches.find(m => m.id === id);
+    if (!match) return;
+
+    let s1 = prompt(`Enter live score for ${match.team1}:`, match.score1 || 0);
+    if (s1 === null) return;
+    let s2 = prompt(`Enter live score for ${match.team2}:`, match.score2 || 0);
+    if (s2 === null) return;
+
+    const numS1 = parseInt(s1);
+    const numS2 = parseInt(s2);
+
+    if (isNaN(numS1) || isNaN(numS2)) {
+        alert(t('alert_invalid_score') || "Invalid score entered.");
+        return;
+    }
+
+    const { error } = await supabaseClient
+        .from('matches')
+        .update({ score1: numS1, score2: numS2 })
+        .eq('id', id);
+
     if (error) {
         alert(t('alert_error_generic') + error.message);
         return;
@@ -205,25 +250,18 @@ setInterval(async () => {
     }
 }, 30000);
 
-async function updateTimezone() {
-    if (!isAdmin || !supabaseClient) return;
-    const select = document.getElementById('admin-timezone-select');
+async function updateUserTimezone() {
+    const select = document.getElementById('user-timezone-select');
     const newTz = select.value;
     if (!newTz) return;
 
-    const { error } = await supabaseClient.from('settings').upsert([{ id: 'global', global_timezone: newTz }]);
-    if (error) {
-        alert(t('alert_error_generic') + error.message);
-        return;
-    }
-
-    globalTimezone = newTz;
-    alert("Timezone updated to " + newTz);
+    userTimezone = newTz;
+    localStorage.setItem('pesLeagueTimezone', newTz);
 
     // Re-render UI with new timezone
     renderSchedule();
     renderMatchHistory();
-    updateCountdown();
+    startCountdownTimer(); // Re-calculates and re-renders countdown
 }
 
 // --- Countdown Logic ---
@@ -419,7 +457,13 @@ async function scheduleMatch(e) {
     const t1 = document.getElementById('match-t1').value;
     const t2 = document.getElementById('match-t2').value;
     const dateTime = document.getElementById('match-datetime').value;
-    const week = parseInt(document.getElementById('match-week')?.value) || 1;
+
+    const stageEl = document.getElementById('match-stage');
+    // Default to Week 1 if null, handle parsing differently because Knockout Stages are strings (QF, SF, F)
+    const weekInput = stageEl ? stageEl.value : '1';
+
+    // Check if it's a number string mapping to a regular week, else keep string (QF, SF, F)
+    let weekVal = weekInput;
 
     if (t1 === t2) {
         alert(t('alert_same_team'));
@@ -434,7 +478,7 @@ async function scheduleMatch(e) {
         team1: t1,
         team2: t2,
         dateTime: dateTime,
-        week: week,
+        week: weekVal,
         is_live: false,
         played: false,
         score1: 0,
@@ -684,6 +728,11 @@ function renderSchedule() {
 
         const liveBadgeHTML = m.is_live ? `<div class="live-badge">🔴 LIVE</div>` : `<strong>${dateStr}</strong>`;
 
+        let scoreDisplay = 'VS';
+        if (m.is_live && m.score1 !== null && m.score2 !== null) {
+            scoreDisplay = `<span style="color:var(--accent); font-weight:800;">${m.score1} - ${m.score2}</span>`;
+        }
+
         card.innerHTML = `
             <div class="match-info">
                 ${liveBadgeHTML}<br>
@@ -692,12 +741,13 @@ function renderSchedule() {
             </div>
             <div class="match-teams">
                 <span>${m.team1}</span>
-                <span class="vs">VS</span>
+                <span class="vs">${scoreDisplay}</span>
                 <span>${m.team2}</span>
             </div>
             ${isAdmin ? `
                 <div class="admin-controls">
                     <button class="btn-sm ${m.is_live ? 'btn-danger' : 'btn-primary'}" onclick="toggleLiveMatch(${m.id}, ${m.is_live})">${m.is_live ? 'END LIVE' : 'GO LIVE'}</button>
+                    ${m.is_live ? `<button class="btn-sm btn-warn" onclick="updateLiveScore(${m.id})">UP. SCORE</button>` : ''}
                     <button class="btn-sm btn-success" onclick="recordResult(${m.id})">${t('edit_score')}</button>
                     <button class="btn-sm btn-danger" onclick="deleteMatch(${m.id})">${t('del')}</button>
                 </div>
@@ -836,6 +886,89 @@ function renderMatchHistory() {
     // Refresh icons since we injected some
     lucide.createIcons();
     renderWeeklyAwards(); // Update awards when history changes
+    renderKnockoutBracket(); // Re-render bracket
+}
+
+function renderKnockoutBracket() {
+    const container = document.getElementById('knockout-stage');
+    const bracket = document.getElementById('knockout-bracket');
+    if (!container || !bracket) return;
+
+    // Filter matches that belong to knockout stages
+    const qfMatches = matches.filter(m => m.week === 'QF');
+    const sfMatches = matches.filter(m => m.week === 'SF');
+    const fMatches = matches.filter(m => m.week === 'F');
+
+    // If no knockout matches exist, hide the section entirely
+    if (qfMatches.length === 0 && sfMatches.length === 0 && fMatches.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    // Helper to render a match block
+    const renderNode = (m) => {
+        if (!m) {
+            return `<div class="bracket-match empty"><div class="bracket-team">TBD</div><div class="bracket-team">TBD</div></div>`;
+        }
+
+        const s1 = m.score1 !== null ? m.score1 : '-';
+        const s2 = m.score2 !== null ? m.score2 : '-';
+        const isLive = m.is_live ? '<span class="live-dot" style="position:static; width:6px; height:6px; margin-right:4px;"></span>' : '';
+
+        return `
+            <div class="bracket-match ${m.played ? 'played' : (m.is_live ? 'live' : '')}">
+                <div class="bracket-team ${m.played && m.score1 > m.score2 ? 'winner' : ''}">
+                    <span>${m.team1}</span>
+                    <span class="bracket-score">${s1}</span>
+                </div>
+                <div class="bracket-team ${m.played && m.score2 > m.score1 ? 'winner' : ''}">
+                    <span>${isLive}${m.team2}</span>
+                    <span class="bracket-score">${s2}</span>
+                </div>
+            </div>
+        `;
+    };
+
+    // Construct Columns
+    let html = '';
+
+    // Quarter Finals Column
+    if (qfMatches.length > 0 || sfMatches.length > 0 || fMatches.length > 0) {
+        html += `<div class="bracket-column">
+            <h4 style="color:var(--text-dim); text-align:center; margin-bottom:1rem;" data-i18n="quarter_finals">${t('quarter_finals') || 'Quarter Finals'}</h4>
+            ${renderNode(qfMatches[0])}
+            ${renderNode(qfMatches[1])}
+            ${renderNode(qfMatches[2])}
+            ${renderNode(qfMatches[3])}
+        </div>`;
+    }
+
+    // Semi Finals Column
+    if (sfMatches.length > 0 || fMatches.length > 0) {
+        html += `<div class="bracket-column">
+            <h4 style="color:var(--text-dim); text-align:center; margin-bottom:1rem;" data-i18n="semi_finals">${t('semi_finals') || 'Semi Finals'}</h4>
+            <div class="sf-connector">
+                ${renderNode(sfMatches[0])}
+            </div>
+            <div class="sf-connector">
+                ${renderNode(sfMatches[1])}
+            </div>
+        </div>`;
+    }
+
+    // Final Column
+    if (fMatches.length > 0) {
+        html += `<div class="bracket-column">
+            <h4 style="color:gold; text-align:center; margin-bottom:1rem;" data-i18n="final">${t('final') || 'Final'}</h4>
+            <div class="f-connector">
+                ${renderNode(fMatches[0])}
+            </div>
+        </div>`;
+    }
+
+    bracket.innerHTML = html;
 }
 
 function calculateLeaderboard() {
@@ -947,16 +1080,26 @@ function renderWeeklyAwards() {
 function populateSelects() {
     const s1 = document.getElementById('match-t1');
     const s2 = document.getElementById('match-t2');
-    if (!s1 || !s2) return;
+    const ttSelect = document.getElementById('trash-talk-match-id');
 
-    s1.innerHTML = '<option value="">Select Team 1</option>';
-    s2.innerHTML = '<option value="">Select Team 2</option>';
+    if (s1) s1.innerHTML = '<option value="">Select Team 1</option>';
+    if (s2) s2.innerHTML = '<option value="">Select Team 2</option>';
+    if (ttSelect) ttSelect.innerHTML = '<option value="">-- General / No Match --</option>';
 
     teams.forEach(team => {
         const opt = `<option value="${team.name}">${team.name}</option>`;
-        s1.innerHTML += opt;
-        s2.innerHTML += opt;
+        if (s1) s1.innerHTML += opt;
+        if (s2) s2.innerHTML += opt;
     });
+
+    if (ttSelect) {
+        const upcomingMatches = matches.filter(m => !m.played)
+            .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+        upcomingMatches.forEach(m => {
+            ttSelect.innerHTML += `<option value="${m.id}">${m.team1} vs ${m.team2} (Week ${m.week || 1})</option>`;
+        });
+    }
 }
 
 
@@ -1230,6 +1373,10 @@ const i18n = {
         "message": "Message",
         "post_it": "POST IT 🔥",
         "match_schedule": "MATCH SCHEDULE",
+        "knockout_stage": "KNOCKOUT STAGE",
+        "quarter_finals": "Quarter Finals",
+        "semi_finals": "Semi Finals",
+        "final": "Final",
         "team": "TEAM",
         "form": "FORM",
         "pts": "PTS",
@@ -1274,6 +1421,7 @@ const i18n = {
         "schedule_new_match": "SCHEDULE NEW MATCH",
         "team_1": "Team 1",
         "team_2": "Team 2",
+        "stage": "Stage",
         "date_time": "Date & Time",
         "create": "CREATE",
         "loading_news": "Loading latest news...",
@@ -1337,6 +1485,10 @@ const i18n = {
         "message": "Mesaj",
         "post_it": "PAYLAŞ 🔥",
         "match_schedule": "OYUN TƏQVİMİ",
+        "knockout_stage": "PLEY-OFF MƏRHƏLƏSİ",
+        "quarter_finals": "1/4 Final",
+        "semi_finals": "Yarımfinal",
+        "final": "Final",
         "team": "KOMANDA",
         "form": "FORMA",
         "pts": "XAL",
@@ -1381,6 +1533,7 @@ const i18n = {
         "schedule_new_match": "YENİ OYUN PLANLAŞDIR",
         "team_1": "Komanda 1",
         "team_2": "Komanda 2",
+        "stage": "Mərhələ",
         "date_time": "Tarix və Saat",
         "create": "YARAT",
         "loading_news": "Ən son xəbərlər yüklənir...",

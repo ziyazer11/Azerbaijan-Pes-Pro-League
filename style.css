@@ -258,6 +258,82 @@ body {
     cursor: default;
 }
 
+/* Knockout Bracket */
+.bracket-container {
+    width: 100%;
+}
+
+.bracket {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    min-width: 800px;
+    /* Force scroll on small screens */
+}
+
+.bracket-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 1.5rem;
+    position: relative;
+    flex: 1;
+}
+
+.bracket-match {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    overflow: hidden;
+    width: 200px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 2;
+}
+
+/* Connectors for Semi and Final */
+.sf-connector,
+.f-connector {
+    position: relative;
+}
+
+.bracket-team {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.bracket-team:last-child {
+    border-bottom: none;
+}
+
+.bracket-match.empty .bracket-team {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+.bracket-score {
+    font-family: var(--font-accent);
+    font-weight: bold;
+    color: var(--text-main);
+}
+
+.bracket-team.winner {
+    background: rgba(0, 255, 65, 0.1);
+}
+
+.bracket-team.winner span {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.bracket-match.live {
+    border-color: var(--az-red);
+    box-shadow: 0 0 10px rgba(228, 0, 43, 0.3);
+}
+
 /* News Ticker Bar */
 .news-ticker-bar {
     background: linear-gradient(90deg, #001f3f, #001122);
